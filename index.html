@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>My Finance Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        :root {
+            --primary: #6650a4;
+            --primary-light: #eaddff;
+            --success: #4caf50;
+            --danger: #ef5350;
+            --warning: #ff9800;
+            --info: #2196f3;
+            --bg: #fffbfe;
+            --surface: #f3edf7;
+            --text: #1d1b20;
+            --text-secondary: #49454f;
+            --card-shadow: 0 1px 3px rgba(0,0,0,0.12);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        .app { max-width: 800px; margin: 0 auto; padding: 16px; }
+        .header {
+            background: var(--primary-light);
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+        }
+        .header h1 { font-size: 24px; font-weight: 700; color: var(--primary); }
+        .header p { font-size: 14px; color: var(--text-secondary); margin-top: 4px; }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: var(--card-shadow);
+        }
+        .stat-card.full { grid-column: span 2; }
+        .stat-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+        .stat-value { font-size: 22px; font-weight: 700; }
+        .stat-value.primary { color: var(--primary); }
+        .stat-value.success { color: var(--success); }
+        .stat-value.danger { color: var(--danger); }
+        .stat-change {
+            font-size: 12px;
+            margin-top: 4px;
+            font-weight: 600;
+        }
+        .stat-change.up { color: var(--success); }
+        .stat-change.down { color: var(--danger); }
+        .chart-section {
+            background: #fff;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: var(--card-shadow);
+        }
+        .chart-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+        .chart-container { position: relative; height: 250px; }
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--primary-light);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .error {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--danger);
+        }
+        .asset-breakdown {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .asset-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .asset-bar-bg {
+            flex: 1;
+            height: 28px;
+            background: var(--surface);
+            border-radius: 14px;
+            overflow: hidden;
+        }
+        .asset-bar-fill {
+            height: 100%;
+            border-radius: 14px;
+            transition: width 0.5s ease;
+        }
+        .asset-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            min-width: 140px;
+        }
+        .asset-name { font-size: 13px; color: var(--text-secondary); }
+        .asset-value { font-size: 14px; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="app" id="app">
+        <div class="loading">
+            <div class="loading-spinner"></div>
+            <p>Loading your finance data...</p>
+        </div>
+    </div>
+
+    <script>
+        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1i7SCzTGkyNKDKRG7kKYiG5WE8dIhrXZuDF-3efQxxH0/export?format=csv';
+
+        function formatWon(value) {
+            if (value >= 100000000) {
+                return '₩' + (value / 100000000).toFixed(1) + '억';
+            } else if (value >= 10000) {
+                return '₩' + (value / 10000).toFixed(0) + '만';
+            }
+            return '₩' + value.toLocaleString('ko-KR');
+        }
+
+        function formatWonFull(value) {
+            return '₩' + value.toLocaleString('ko-KR');
+        }
+
+        function parseWon(str) {
+            return parseInt(str.replace(/[₩,\s]/g, '')) || 0;
+        }
+
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            result.push(current.trim());
+            return result;
+        }
+
+        async function loadData() {
+            try {
+                const response = await fetch(SHEET_URL);
+                const csv = await response.text();
+                const rows = csv.split('\n').filter(r => r.trim());
+                
+                const data = [];
+                
+                for (let i = 1; i < rows.length; i++) {
+                    const cols = parseCSVLine(rows[i]).map(c => c.replace(/"/g, ''));
+                    if (cols[0] && cols[0].includes('2026')) {
+                        data.push({
+                            date: cols[0],
+                            cash: parseWon(cols[1]),
+                            stocks: parseWon(cols[2]),
+                            pension: parseWon(cols[3]),
+                            realestate: parseWon(cols[4]),
+                            debt: parseWon(cols[5]),
+                            net: parseWon(cols[6]),
+                            change: parseWon(cols[7])
+                        });
+                    }
+                }
+                
+                renderDashboard(data);
+            } catch (err) {
+                document.getElementById('app').innerHTML = `
+                    <div class="error">
+                        <h3>Failed to load data</h3>
+                        <p>${err.message}</p>
+                        <p style="margin-top: 12px; font-size: 13px;">
+                            Make sure your Google Sheet is shared with "Anyone with the link can view"
+                        </p>
+                    </div>
+                `;
+            }
+        }
+
+        function renderDashboard(data) {
+            const latest = data[data.length - 1];
+            const previous = data[data.length - 2];
+            const totalAssets = latest.cash + latest.stocks + latest.pension + latest.realestate;
+            const momChange = latest.change || (latest.net - (previous ? previous.net : latest.net));
+            const momPercent = previous ? ((momChange / previous.net) * 100).toFixed(2) : '0.00';
+
+            const assetColors = {
+                cash: '#4caf50',
+                stocks: '#2196f3',
+                pension: '#ff9800',
+                realestate: '#9c27b0'
+            };
+
+            document.getElementById('app').innerHTML = `
+                <div class="header">
+                    <h1>My Finance Dashboard</h1>
+                    <p>Last updated: ${latest.date}</p>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card full">
+                        <div class="stat-label">Net Assets (순자산)</div>
+                        <div class="stat-value primary">${formatWonFull(latest.net)}</div>
+                        <div class="stat-change ${momChange >= 0 ? 'up' : 'down'}">
+                            ${momChange >= 0 ? '▲' : '▼'} ${formatWonFull(Math.abs(momChange))} (${momPercent}%)
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Total Assets</div>
+                        <div class="stat-value success">${formatWon(totalAssets)}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Debt (부채)</div>
+                        <div class="stat-value danger">${formatWon(latest.debt)}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Cash</div>
+                        <div class="stat-value">${formatWon(latest.cash)}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Stocks</div>
+                        <div class="stat-value">${formatWon(latest.stocks)}</div>
+                    </div>
+                </div>
+
+                <div class="chart-section">
+                    <div class="chart-title">Net Assets Trend</div>
+                    <div class="chart-container">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-section">
+                    <div class="chart-title">Asset Breakdown</div>
+                    <div class="chart-container" style="height: 200px;">
+                        <canvas id="breakdownChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-section">
+                    <div class="chart-title">Asset Composition (${latest.date})</div>
+                    <div class="asset-breakdown">
+                        ${renderAssetBar('Cash', latest.cash, totalAssets, assetColors.cash)}
+                        ${renderAssetBar('Stocks', latest.stocks, totalAssets, assetColors.stocks)}
+                        ${renderAssetBar('Pension', latest.pension, totalAssets, assetColors.pension)}
+                        ${renderAssetBar('Real Estate', latest.realestate, totalAssets, assetColors.realestate)}
+                    </div>
+                </div>
+
+                <div class="chart-section">
+                    <div class="chart-title">Monthly Change</div>
+                    <div class="chart-container">
+                        <canvas id="changeChart"></canvas>
+                    </div>
+                </div>
+            `;
+
+            // Trend Chart
+            new Chart(document.getElementById('trendChart'), {
+                type: 'line',
+                data: {
+                    labels: data.map(d => d.date.replace('2026년 ', '')),
+                    datasets: [{
+                        label: 'Net Assets',
+                        data: data.map(d => d.net / 1000000),
+                        borderColor: '#6650a4',
+                        backgroundColor: 'rgba(102, 80, 164, 0.1)',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 5,
+                        pointBackgroundColor: '#6650a4'
+                    }, {
+                        label: 'Debt',
+                        data: data.map(d => d.debt / 1000000),
+                        borderColor: '#ef5350',
+                        backgroundColor: 'transparent',
+                        borderDash: [5, 5],
+                        tension: 0.3,
+                        pointRadius: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => ctx.dataset.label + ': ₩' + ctx.raw.toFixed(0) + 'M'
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            ticks: {
+                                callback: (v) => '₩' + v.toFixed(0) + 'M'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Breakdown Pie Chart
+            new Chart(document.getElementById('breakdownChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Cash', 'Stocks', 'Pension', 'Real Estate'],
+                    datasets: [{
+                        data: [latest.cash, latest.stocks, latest.pension, latest.realestate],
+                        backgroundColor: [assetColors.cash, assetColors.stocks, assetColors.pension, assetColors.realestate]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right' },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => {
+                                    const val = ctx.raw;
+                                    const pct = ((val / totalAssets) * 100).toFixed(1);
+                                    return ctx.label + ': ' + formatWon(val) + ' (' + pct + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Change Chart
+            new Chart(document.getElementById('changeChart'), {
+                type: 'bar',
+                data: {
+                    labels: data.slice(1).map(d => d.date.replace('2026년 ', '')),
+                    datasets: [{
+                        label: 'Monthly Change',
+                        data: data.slice(1).map(d => d.change / 1000000),
+                        backgroundColor: data.slice(1).map(d => d.change >= 0 ? '#4caf50' : '#ef5350'),
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => 'Change: ₩' + ctx.raw.toFixed(0) + 'M'
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            ticks: { callback: (v) => '₩' + v.toFixed(0) + 'M' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderAssetBar(name, value, total, color) {
+            const pct = ((value / total) * 100).toFixed(1);
+            return `
+                <div class="asset-item">
+                    <div class="asset-bar-bg">
+                        <div class="asset-bar-fill" style="width: ${pct}%; background: ${color};"></div>
+                    </div>
+                    <div class="asset-info">
+                        <span class="asset-name">${name}</span>
+                        <span class="asset-value">${formatWon(value)}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        loadData();
+    </script>
+</body>
+</html>

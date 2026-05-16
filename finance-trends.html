@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>유주네 자산 추이 - 상세 분석</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        :root {
+            --primary: #6650a4;
+            --primary-light: #eaddff;
+            --success: #4caf50;
+            --danger: #ef5350;
+            --warning: #ff9800;
+            --info: #2196f3;
+            --bg: #fffbfe;
+            --surface: #f3edf7;
+            --text: #1d1b20;
+            --text-secondary: #49454f;
+            --card-shadow: 0 1px 3px rgba(0,0,0,0.12);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        .app { max-width: 900px; margin: 0 auto; padding: 16px; padding-bottom: 40px; }
+        .header {
+            background: var(--primary-light);
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+        }
+        .header h1 { font-size: 22px; font-weight: 700; color: var(--primary); }
+        .header p { font-size: 14px; color: var(--text-secondary); margin-top: 4px; }
+        .download-btn {
+            display: inline-block;
+            margin-top: 12px;
+            background: var(--primary);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 24px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin: 28px 0 16px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+        .chart-section {
+            background: #fff;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: var(--card-shadow);
+        }
+        .chart-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+        .chart-container { position: relative; height: 280px; }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .stat-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: var(--card-shadow);
+        }
+        .stat-card.full { grid-column: span 2; }
+        .stat-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+        .stat-value { font-size: 20px; font-weight: 700; }
+        .stat-value.primary { color: var(--primary); }
+        .stat-value.success { color: var(--success); }
+        .stat-value.danger { color: var(--danger); }
+        .asset-table {
+            background: #fff;
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: var(--card-shadow);
+            overflow-x: auto;
+        }
+        .asset-table table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .asset-table th {
+            text-align: left;
+            padding: 10px 8px;
+            border-bottom: 2px solid var(--primary-light);
+            font-weight: 600;
+            color: var(--primary);
+            white-space: nowrap;
+        }
+        .asset-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #f0f0f0;
+            white-space: nowrap;
+        }
+        .asset-table tr:last-child td { border-bottom: none; }
+        .asset-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+        .asset-table .up { color: var(--success); font-weight: 600; }
+        .asset-table .down { color: var(--danger); font-weight: 600; }
+        .asset-type-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .type-cash { background: #e8f5e9; color: #2e7d32; }
+        .type-saving { background: #fff3e0; color: #ef6c00; }
+        .type-pension { background: #e3f2fd; color: #1565c0; }
+        .type-stock { background: #fce4ec; color: #c62828; }
+        .type-crypto { background: #f3e5f5; color: #6a1b9a; }
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--primary-light);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="app" id="app">
+        <div class="loading">
+            <div class="loading-spinner"></div>
+            <p>데이터를 불러오는 중...</p>
+        </div>
+    </div>
+
+    <script>
+        const SHEET_URLS = [
+            'https://docs.google.com/spreadsheets/d/1i7SCzTGkyNKDKRG7kKYiG5WE8dIhrXZuDF-3efQxxH0/export?format=csv&gid=0',
+            'https://docs.google.com/spreadsheets/d/1i7SCzTGkyNKDKRG7kKYiG5WE8dIhrXZuDF-3efQxxH0/export?format=csv',
+            'https://docs.google.com/spreadsheets/d/1i7SCzTGkyNKDKRG7kKYiG5WE8dIhrXZuDF-3efQxxH0/export?format=csv&gid=123456789'
+        ];
+
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            result.push(current.trim());
+            return result.map(c => c.replace(/"/g, ''));
+        }
+
+        function parseWon(str) {
+            if (!str) return 0;
+            return parseInt(String(str).replace(/[₩,\s]/g, '')) || 0;
+        }
+
+        function formatWon(value) {
+            if (value >= 100000000) return '₩' + (value / 100000000).toFixed(1) + '억';
+            if (value >= 10000) return '₩' + (value / 10000).toFixed(0) + '만';
+            return '₩' + value.toLocaleString('ko-KR');
+        }
+
+        function formatWonFull(value) {
+            return '₩' + value.toLocaleString('ko-KR');
+        }
+
+        async function loadData() {
+            try {
+                // Load overview (no gid)
+                const overviewRes = await fetch(SHEET_URLS[1]);
+                const overviewCsv = await overviewRes.text();
+                const overviewRows = overviewCsv.split('\n').filter(r => r.trim()).map(parseCSVLine);
+                
+                const overview = [];
+                for (let i = 1; i < overviewRows.length; i++) {
+                    const r = overviewRows[i];
+                    if (r[0] && r[0].includes('2026')) {
+                        overview.push({
+                            date: r[0],
+                            cash: parseWon(r[1]),
+                            stocks: parseWon(r[2]),
+                            pension: parseWon(r[3]),
+                            realestate: parseWon(r[4]),
+                            debt: parseWon(r[5]),
+                            net: parseWon(r[6]),
+                            change: parseWon(r[7])
+                        });
+                    }
+                }
+
+                // Load detailed assets (gid=0)
+                const detailRes = await fetch(SHEET_URLS[0]);
+                const detailCsv = await detailRes.text();
+                const detailRows = detailCsv.split('\n').filter(r => r.trim()).map(parseCSVLine);
+                
+                const assets = [];
+                for (let i = 1; i < detailRows.length; i++) {
+                    const r = detailRows[i];
+                    if (r[0] && r[1]) {
+                        assets.push({
+                            date: r[0],
+                            type: r[1],
+                            owner: r[2],
+                            product: r[3],
+                            amount: parseWon(r[4]),
+                            returnRate: r[5] ? parseFloat(r[5]) : null,
+                            purpose: r[6],
+                            maturity: r[7]
+                        });
+                    }
+                }
+
+                renderDashboard(overview, assets);
+            } catch (err) {
+                document.getElementById('app').innerHTML = `
+                    <div class="loading">
+                        <h3 style="color:#ef5350;margin-bottom:8px;">데이터를 불러올 수 없습니다</h3>
+                        <p>${err.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function renderDashboard(overview, assets) {
+            const dates = [...new Set(assets.map(a => a.date))].sort();
+            const assetTypes = ['예금', '적금', '개인연금', '주식', '가상화폐'];
+            const typeColors = {
+                '예금': '#4caf50',
+                '적금': '#ff9800',
+                '개인연금': '#2196f3',
+                '주식': '#ef5350',
+                '가상화폐': '#9c27b0'
+            };
+
+            const latest = overview[overview.length - 1];
+            const prev = overview[overview.length - 2];
+            const totalAssets = latest.cash + latest.stocks + latest.pension + latest.realestate;
+
+            // Calculate trends by asset type
+            const typeTrends = {};
+            assetTypes.forEach(t => {
+                typeTrends[t] = dates.map(d => 
+                    assets.filter(a => a.date === d && a.type === t).reduce((s, a) => s + a.amount, 0)
+                );
+            });
+
+            // Individual asset trends
+            const products = {};
+            assets.forEach(a => {
+                const key = a.type + '|' + a.product;
+                if (!products[key]) products[key] = { type: a.type, product: a.product, values: {} };
+                products[key].values[a.date] = a.amount;
+            });
+
+            // Purpose breakdown for latest month
+            const purposeData = {};
+            assets.filter(a => a.date === dates[dates.length - 1]).forEach(a => {
+                purposeData[a.purpose || '기타'] = (purposeData[a.purpose || '기타'] || 0) + a.amount;
+            });
+
+            let html = `
+                <div class="header">
+                    <h1>유주네 자산 추이 분석</h1>
+                    <p>최종 업데이트: ${dates[dates.length - 1]}</p>
+                    <a href="finance_enhanced.xlsx" class="download-btn" download>📥 Enhanced Excel 다운로드</a>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card full">
+                        <div class="stat-label">순자산 (Net Assets)</div>
+                        <div class="stat-value primary">${formatWonFull(latest.net)}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">총 자산</div>
+                        <div class="stat-value success">${formatWon(totalAssets)}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">부채</div>
+                        <div class="stat-value danger">${formatWon(latest.debt)}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">주식</div>
+                        <div class="stat-value">${formatWon(latest.stocks)}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">개인연금</div>
+                        <div class="stat-value">${formatWon(latest.pension)}</div>
+                    </div>
+                </div>
+
+                <div class="section-title">자산종류별 추이</div>
+                <div class="chart-section">
+                    <div class="chart-container">
+                        <canvas id="typeTrendChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-section">
+                    <div class="chart-container">
+                        <canvas id="stackedChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="section-title">목적별 자산 분포 (${dates[dates.length-1]})</div>
+                <div class="chart-section">
+                    <div class="chart-container" style="height:250px;">
+                        <canvas id="purposeChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="section-title">개별 자산 성과</div>
+                <div class="asset-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>종류</th>
+                                <th>상품명</th>
+                                ${dates.map(d => `<th>${d.replace('2026년 ', '')}</th>`).join('')}
+                                <th class="num">변동액</th>
+                                <th class="num">변동률</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${Object.values(products).map(p => {
+                                const firstVal = dates.map(d => p.values[d]).find(v => v > 0) || 0;
+                                const lastVal = dates.map(d => p.values[d]).reverse().find(v => v > 0) || 0;
+                                const change = lastVal - firstVal;
+                                const pct = firstVal > 0 ? ((change / firstVal) * 100).toFixed(1) : '0.0';
+                                const typeClass = {
+                                    '예금': 'type-cash', '적금': 'type-saving', '개인연금': 'type-pension',
+                                    '주식': 'type-stock', '가상화폐': 'type-crypto'
+                                }[p.type] || '';
+                                return `
+                                    <tr>
+                                        <td><span class="asset-type-badge ${typeClass}">${p.type}</span></td>
+                                        <td>${p.product}</td>
+                                        ${dates.map(d => `<td class="num">${p.values[d] ? formatWon(p.values[d]) : '-'}</td>`).join('')}
+                                        <td class="num ${change >= 0 ? 'up' : 'down'}">${change >= 0 ? '+' : ''}${formatWon(change)}</td>
+                                        <td class="num ${change >= 0 ? 'up' : 'down'}">${change >= 0 ? '+' : ''}${pct}%</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            document.getElementById('app').innerHTML = html;
+
+            // Line chart for each asset type
+            new Chart(document.getElementById('typeTrendChart'), {
+                type: 'line',
+                data: {
+                    labels: dates.map(d => d.replace('2026년 ', '')),
+                    datasets: assetTypes.map(t => ({
+                        label: t,
+                        data: typeTrends[t].map(v => v / 1000000),
+                        borderColor: typeColors[t],
+                        backgroundColor: typeColors[t] + '20',
+                        fill: false,
+                        tension: 0.3,
+                        pointRadius: 4
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: { display: true, text: '자산종류별 월별 추이 (백만원)' },
+                        legend: { position: 'top' }
+                    },
+                    scales: {
+                        y: { ticks: { callback: v => '₩' + v.toFixed(0) + 'M' } }
+                    }
+                }
+            });
+
+            // Stacked bar chart
+            new Chart(document.getElementById('stackedChart'), {
+                type: 'bar',
+                data: {
+                    labels: dates.map(d => d.replace('2026년 ', '')),
+                    datasets: assetTypes.map(t => ({
+                        label: t,
+                        data: typeTrends[t].map(v => v / 1000000),
+                        backgroundColor: typeColors[t]
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: { display: true, text: '자산종류별 누적 현황 (백만원)' },
+                        legend: { position: 'top' }
+                    },
+                    scales: {
+                        x: { stacked: true },
+                        y: { stacked: true, ticks: { callback: v => '₩' + v.toFixed(0) + 'M' } }
+                    }
+                }
+            });
+
+            // Purpose pie chart
+            new Chart(document.getElementById('purposeChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(purposeData),
+                    datasets: [{
+                        data: Object.values(purposeData).map(v => v / 1000000),
+                        backgroundColor: ['#4caf50', '#2196f3', '#ff9800', '#9c27b0', '#ef5350', '#00bcd4', '#795548']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: { display: true, text: '목적별 자산 분포 (백만원)' },
+                        legend: { position: 'right' },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => {
+                                    const total = Object.values(purposeData).reduce((a,b) => a+b, 0);
+                                    const pct = ((ctx.raw * 1000000 / total) * 100).toFixed(1);
+                                    return ctx.label + ': ' + formatWon(ctx.raw * 1000000) + ' (' + pct + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        loadData();
+    </script>
+</body>
+</html>

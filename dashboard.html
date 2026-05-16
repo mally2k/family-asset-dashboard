@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#6650a4">
+    <title>유주네 자산 현황</title>
+    <link rel="manifest" href="/manifest.json">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <style>
+        :root {
+            --primary: #6650a4;
+            --primary-light: #eaddff;
+            --primary-dark: #4a3880;
+            --success: #4caf50;
+            --danger: #ef5350;
+            --warning: #ff9800;
+            --info: #2196f3;
+            --bg: #fffbfe;
+            --surface: #f3edf7;
+            --text: #1d1b20;
+            --text-secondary: #49454f;
+            --card-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            --radius: 20px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Password Screen */
+        #passwordScreen {
+            position: fixed; inset: 0; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 1000; transition: opacity 0.5s, transform 0.5s;
+        }
+        #passwordScreen.hidden {
+            opacity: 0; pointer-events: none; transform: scale(1.05);
+        }
+        .lock-icon { font-size: 64px; margin-bottom: 20px; }
+        .lock-title { color: white; font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+        .lock-subtitle { color: rgba(255,255,255,0.7); font-size: 14px; margin-bottom: 32px; }
+        .pin-inputs { display: flex; gap: 12px; margin-bottom: 24px; }
+        .pin-inputs input {
+            width: 48px; height: 56px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.1); color: white; font-size: 24px; font-weight: 700;
+            text-align: center; caret-color: white; outline: none; transition: all 0.2s;
+        }
+        .pin-inputs input:focus { border-color: white; background: rgba(255,255,255,0.2); }
+        .pin-error { color: #ff9e9e; font-size: 13px; height: 20px; margin-bottom: 8px; }
+        .unlock-btn {
+            background: white; color: var(--primary); border: none; border-radius: 28px;
+            padding: 14px 48px; font-size: 16px; font-weight: 700; cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.2s;
+        }
+        .unlock-btn:active { transform: scale(0.96); }
+
+        /* Main App */
+        .app { max-width: 900px; margin: 0 auto; padding: 16px; padding-bottom: 40px; display: none; }
+        .app.visible { display: block; animation: fadeIn 0.5s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .top-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px;
+        }
+        .top-bar h1 { font-size: 22px; font-weight: 700; color: var(--primary); }
+        .share-btn {
+            background: var(--primary-light); color: var(--primary); border: none;
+            border-radius: 24px; padding: 10px 20px; font-size: 14px; font-weight: 600;
+            cursor: pointer; display: flex; align-items: center; gap: 6px;
+            transition: all 0.2s;
+        }
+        .share-btn:active { transform: scale(0.95); }
+        .share-btn.copied { background: var(--success); color: white; }
+
+        .stats-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px;
+        }
+        .stat-card {
+            background: #fff; border-radius: var(--radius); padding: 18px;
+            box-shadow: var(--card-shadow); position: relative; overflow: hidden;
+        }
+        .stat-card.full { grid-column: span 2; }
+        .stat-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+        }
+        .stat-card.primary::before { background: var(--primary); }
+        .stat-card.success::before { background: var(--success); }
+        .stat-card.danger::before { background: var(--danger); }
+        .stat-card.info::before { background: var(--info); }
+        .stat-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; }
+        .stat-value { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+        .stat-change {
+            font-size: 12px; margin-top: 6px; font-weight: 600; display: inline-flex;
+            align-items: center; gap: 4px; padding: 2px 8px; border-radius: 10px;
+        }
+        .stat-change.up { color: var(--success); background: #e8f5e9; }
+        .stat-change.down { color: var(--danger); background: #ffebee; }
+
+        .chart-section {
+            background: #fff; border-radius: var(--radius); padding: 20px;
+            margin-bottom: 16px; box-shadow: var(--card-shadow);
+        }
+        .chart-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; color: var(--text); }
+        .chart-container { position: relative; height: 360px; }
+        .chart-container.small { height: 240px; }
+
+        .alloc-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 16px;
+        }
+        .alloc-item {
+            display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+            background: var(--surface); border-radius: 12px;
+        }
+        .alloc-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+        .alloc-info { flex: 1; min-width: 0; }
+        .alloc-name { font-size: 13px; font-weight: 600; color: var(--text); }
+        .alloc-pct { font-size: 12px; color: var(--text-secondary); }
+        .alloc-value { font-size: 13px; font-weight: 700; color: var(--primary); text-align: right; }
+
+        .loading {
+            text-align: center; padding: 60px 20px; color: var(--text-secondary);
+        }
+        .loading-spinner {
+            width: 40px; height: 40px; border: 3px solid var(--primary-light);
+            border-top-color: var(--primary); border-radius: 50%;
+            animation: spin 1s linear infinite; margin: 0 auto 16px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .error-box {
+            background: #ffebee; color: var(--danger); padding: 20px; border-radius: var(--radius);
+            text-align: center; margin: 20px 0;
+        }
+        .retry-btn {
+            background: var(--danger); color: white; border: none; border-radius: 20px;
+            padding: 10px 24px; margin-top: 12px; font-size: 14px; font-weight: 600; cursor: pointer;
+        }
+
+        .footer {
+            text-align: center; padding: 20px; color: var(--text-secondary); font-size: 12px;
+        }
+
+        @media (min-width: 768px) {
+            .stats-grid { grid-template-columns: repeat(4, 1fr); }
+            .stat-card.full { grid-column: span 1; }
+            .alloc-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Password Screen -->
+<div id="passwordScreen">
+    <div class="lock-icon">&#128274;</div>
+    <div class="lock-title">유주네 자산 현황</div>
+    <div class="lock-subtitle">비밀번호를 입력하세요</div>
+    <div class="pin-inputs" id="pinInputs">
+        <input type="password" maxlength="1" data-index="0" inputmode="numeric">
+        <input type="password" maxlength="1" data-index="1" inputmode="numeric">
+        <input type="password" maxlength="1" data-index="2" inputmode="numeric">
+        <input type="password" maxlength="1" data-index="3" inputmode="numeric">
+        <input type="password" maxlength="1" data-index="4" inputmode="numeric">
+        <input type="password" maxlength="1" data-index="5" inputmode="numeric">
+    </div>
+    <div class="pin-error" id="pinError"></div>
+    <button class="unlock-btn" id="unlockBtn" onclick="checkPassword()">확인</button>
+</div>
+
+<!-- Main App -->
+<div class="app" id="mainApp">
+    <div class="top-bar">
+        <h1>유주네 자산 현황</h1>
+        <button class="share-btn" id="shareBtn" onclick="shareLink()">
+            <span>&#128279;</span> <span id="shareText">공유</span>
+        </button>
+    </div>
+
+    <div id="contentArea">
+        <div class="loading">
+            <div class="loading-spinner"></div>
+            <p>자산 데이터를 불러오는 중...</p>
+        </div>
+    </div>
+
+    <div class="footer">
+        Family Asset Dashboard &middot; Live data from Google Sheets
+    </div>
+</div>
+
+<script>
+const CORRECT_PIN = '713907';
+const API_URL = '/api/v1/valuation/live';
+
+const COLORS = {
+    domestic_stock: '#ef5350',
+    overseas_stock: '#ff7043',
+    pension: '#2196f3',
+    cash: '#4caf50',
+    savings: '#ff9800',
+    crypto: '#9c27b0',
+    real_estate: '#795548',
+    debt: '#ef5350',
+};
+
+const LABELS = {
+    domestic_stock: '국내 주식',
+    overseas_stock: '해외 주식',
+    pension: '개인연금',
+    cash: '현금/예금',
+    savings: '적금',
+    crypto: '가상화폐',
+    real_estate: '부동산',
+    debt: '부채',
+};
+
+const datalabelsPlugin = window.ChartDataLabels || window.chartjsPluginDatalabels;
+if (datalabelsPlugin) {
+    Chart.register(datalabelsPlugin);
+}
+
+// Password handling
+const pinInputs = document.querySelectorAll('#pinInputs input');
+
+pinInputs.forEach((input, idx) => {
+    input.addEventListener('input', (e) => {
+        document.getElementById('pinError').textContent = '';
+        if (e.target.value && idx < pinInputs.length - 1) {
+            pinInputs[idx + 1].focus();
+        }
+    });
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && !e.target.value && idx > 0) {
+            pinInputs[idx - 1].focus();
+        }
+        if (e.key === 'Enter') {
+            checkPassword();
+        }
+    });
+});
+
+function checkPassword() {
+    const entered = Array.from(pinInputs).map(i => i.value).join('');
+    if (entered === CORRECT_PIN) {
+        document.getElementById('passwordScreen').classList.add('hidden');
+        document.getElementById('mainApp').classList.add('visible');
+        loadData();
+    } else {
+        document.getElementById('pinError').textContent = '비밀번호가 올바르지 않습니다';
+        pinInputs.forEach(i => { i.value = ''; });
+        pinInputs[0].focus();
+    }
+}
+
+// Share button
+function shareLink() {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url).then(() => {
+        const btn = document.getElementById('shareBtn');
+        const text = document.getElementById('shareText');
+        btn.classList.add('copied');
+        text.textContent = '복사완료!';
+        setTimeout(() => {
+            btn.classList.remove('copied');
+            text.textContent = '공유';
+        }, 2000);
+    });
+}
+
+// Format currency
+function formatWon(value) {
+    if (value >= 100000000) return '₩' + (value / 100000000).toFixed(1) + '억';
+    if (value >= 10000) return '₩' + (value / 10000).toFixed(0) + '만';
+    return '₩' + value.toLocaleString('ko-KR');
+}
+
+function formatWonFull(value) {
+    return '₩' + value.toLocaleString('ko-KR');
+}
+
+function formatAxisLabel(valueInMillions) {
+    const value = valueInMillions * 1000000;
+    if (value >= 100000000) return (value / 100000000).toFixed(1) + '억';
+    if (value >= 10000) return (value / 10000).toFixed(0) + '만';
+    return value.toLocaleString('ko-KR');
+}
+
+function formatTooltipWon(valueInMillions) {
+    return '₩' + (valueInMillions * 1000000).toLocaleString('ko-KR');
+}
+
+function formatLabelCompact(valueInMillions) {
+    if (valueInMillions === null || valueInMillions === undefined || isNaN(valueInMillions)) return '';
+    const value = valueInMillions * 1000000;
+    if (value >= 100000000) return (value / 100000000).toFixed(1) + '억';
+    if (value >= 10000) return Math.round(value / 10000).toLocaleString('ko-KR') + '만';
+    return Math.round(value).toLocaleString('ko-KR');
+}
+
+function computeStackedMin(trends) {
+    // Real estate is placed at the bottom of the stack. Set the Y-axis min
+    // just below the minimum real estate value so the chart "zooms in" on
+    // the upper zone where smaller, fluctuating assets are visible.
+    const reValues = trends.map(t => (t.categories.real_estate || 0) / 1000000);
+    const minRE = Math.min(...reValues);
+    return Math.max(0, Math.floor(minRE * 0.95));
+}
+
+// Load data
+async function loadData() {
+    try {
+        const res = await fetch(API_URL);
+        if (!res.ok) throw new Error('API error: ' + res.status);
+        const data = await res.json();
+        renderDashboard(data);
+    } catch (err) {
+        document.getElementById('contentArea').innerHTML = `
+            <div class="error-box">
+                <p>데이터를 불러올 수 없습니다</p>
+                <p style="font-size:13px;margin-top:4px;">${err.message}</p>
+                <button class="retry-btn" onclick="loadData()">다시 시도</button>
+            </div>
+        `;
+    }
+}
+
+function renderDashboard(data) {
+    const trends = data.historical_trends;
+    const allocation = data.asset_allocation;
+    const latest = trends[trends.length - 1];
+    const prev = trends.length > 1 ? trends[trends.length - 2] : null;
+
+    // Calculate MoM
+    const momChange = prev ? latest.net_assets_krw - prev.net_assets_krw : 0;
+    const momPct = prev ? ((momChange / prev.net_assets_krw) * 100).toFixed(2) : '0.00';
+
+    // Build asset class trends from detail data
+    // The backend trends only have overview categories, so we use those
+    const periods = trends.map(t => t.period.replace('2026-', ''));
+    const assetKeys = ['cash', 'stocks', 'pension', 'real_estate'];
+
+    let html = `
+        <div class="stats-grid">
+            <div class="stat-card full primary">
+                <div class="stat-label">순자산 (Net Assets)</div>
+                <div class="stat-value" style="color:var(--primary)">${formatWonFull(data.net_valuation_krw)}</div>
+                <div class="stat-change ${momChange >= 0 ? 'up' : 'down'}">
+                    ${momChange >= 0 ? '&#9650;' : '&#9660;'} ${formatWonFull(Math.abs(momChange))} (${momPct}%)
+                </div>
+            </div>
+            <div class="stat-card success">
+                <div class="stat-label">총 자산</div>
+                <div class="stat-value" style="color:var(--success)">${formatWon(data.total_valuation_krw)}</div>
+            </div>
+            <div class="stat-card danger">
+                <div class="stat-label">부채</div>
+                <div class="stat-value" style="color:var(--danger)">${formatWon(data.total_debt_krw)}</div>
+            </div>
+            <div class="stat-card info">
+                <div class="stat-label">자산 종류</div>
+                <div class="stat-value" style="color:var(--info)">${allocation.length}개</div>
+            </div>
+        </div>
+
+        <div class="chart-section">
+            <div class="chart-title">자산 추이 (Stacked Area)</div>
+            <div class="chart-container">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-section">
+            <div class="chart-title">자산 배분</div>
+            <div class="chart-container small">
+                <canvas id="allocChart"></canvas>
+            </div>
+            <div class="alloc-grid">
+                ${allocation.map(item => `
+                    <div class="alloc-item">
+                        <div class="alloc-dot" style="background:${COLORS[item.category] || '#999'}"></div>
+                        <div class="alloc-info">
+                            <div class="alloc-name">${item.category_label}</div>
+                            <div class="alloc-pct">${item.percentage}%</div>
+                        </div>
+                        <div class="alloc-value">${formatWon(item.amount_krw)}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+
+        <div class="chart-section">
+            <div class="chart-title">월별 순자산 변화</div>
+            <div class="chart-container small">
+                <canvas id="netChart"></canvas>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('contentArea').innerHTML = html;
+
+    // Stacked Area Chart
+    const ctxTrend = document.getElementById('trendChart').getContext('2d');
+    new Chart(ctxTrend, {
+        type: 'line',
+        data: {
+            labels: periods,
+            datasets: [
+                {
+                    label: '부동산',
+                    data: trends.map(t => (t.categories.real_estate || 0) / 1000000),
+                    borderColor: COLORS.real_estate, backgroundColor: COLORS.real_estate + '60',
+                    fill: true, tension: 0.3, pointRadius: 4
+                },
+                {
+                    label: '주식',
+                    data: trends.map(t => (t.categories.stocks || 0) / 1000000),
+                    borderColor: COLORS.domestic_stock, backgroundColor: COLORS.domestic_stock + '60',
+                    fill: true, tension: 0.3, pointRadius: 4
+                },
+                {
+                    label: '개인연금',
+                    data: trends.map(t => (t.categories.pension || 0) / 1000000),
+                    borderColor: COLORS.pension, backgroundColor: COLORS.pension + '60',
+                    fill: true, tension: 0.3, pointRadius: 4
+                },
+                {
+                    label: '현금/예금',
+                    data: trends.map(t => (t.categories.cash || 0) / 1000000),
+                    borderColor: COLORS.cash, backgroundColor: COLORS.cash + '60',
+                    fill: true, tension: 0.3, pointRadius: 4
+                },
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { position: 'top', labels: { usePointStyle: true, padding: 16 } },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => ctx.dataset.label + ': ' + formatTooltipWon(ctx.raw),
+                        footer: (tooltipItems) => {
+                            let total = 0;
+                            tooltipItems.forEach(item => total += (item.raw * 1000000));
+                            return '총 자산: ' + formatWonFull(total);
+                        }
+                    }
+                },
+                datalabels: {
+                    display: 'auto',
+                    align: 'top',
+                    anchor: 'end',
+                    offset: 3,
+                    color: '#333',
+                    font: { size: 10, weight: '600' },
+                    formatter: (value) => formatLabelCompact(value),
+                    backgroundColor: 'rgba(255,255,255,0.75)',
+                    borderRadius: 4,
+                    padding: { top: 1, bottom: 1, left: 3, right: 3 },
+                    clip: false
+                }
+            },
+            scales: {
+                x: { grid: { display: false } },
+                y: {
+                    stacked: true,
+                    min: computeStackedMin(trends),
+                    ticks: { callback: v => formatAxisLabel(v) },
+                    grid: { color: '#f0f0f0' }
+                }
+            }
+        }
+    });
+
+    // Allocation Doughnut
+    const ctxAlloc = document.getElementById('allocChart').getContext('2d');
+    new Chart(ctxAlloc, {
+        type: 'doughnut',
+        data: {
+            labels: allocation.map(a => a.category_label),
+            datasets: [{
+                data: allocation.map(a => a.amount_krw),
+                backgroundColor: allocation.map(a => COLORS[a.category] || '#999'),
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            cutout: '65%',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => {
+                            const pct = allocation[ctx.dataIndex].percentage;
+                            return `${ctx.label}: ${formatWon(ctx.raw)} (${pct}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Net Assets Bar Chart
+    const ctxNet = document.getElementById('netChart').getContext('2d');
+    new Chart(ctxNet, {
+        type: 'bar',
+        data: {
+            labels: periods,
+            datasets: [{
+                label: '순자산',
+                data: trends.map(t => t.net_assets_krw / 1000000),
+                backgroundColor: trends.map((t, i) => i === trends.length - 1 ? '#6650a4' : '#b39ddb'),
+                borderRadius: 8
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: ctx => '순자산: ' + formatTooltipWon(ctx.raw) } },
+                datalabels: {
+                    display: 'auto',
+                    align: 'top',
+                    anchor: 'end',
+                    offset: 3,
+                    color: '#333',
+                    font: { size: 10, weight: '600' },
+                    formatter: (value) => formatLabelCompact(value),
+                    backgroundColor: 'rgba(255,255,255,0.75)',
+                    borderRadius: 4,
+                    padding: { top: 1, bottom: 1, left: 3, right: 3 },
+                    clip: false
+                }
+            },
+            scales: {
+                y: {
+                    min: Math.max(0, Math.floor(Math.min(...trends.map(t => t.net_assets_krw / 1000000)) * 0.98)),
+                    ticks: { callback: v => formatAxisLabel(v) },
+                    grid: { color: '#f0f0f0' }
+                },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+}
+</script>
+</body>
+</html>

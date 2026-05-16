@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#6650a4">
+    <title>Face Exercise</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.png">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        :root {
+            --primary: #6650a4;
+            --primary-light: #eaddff;
+            --secondary: #625b71;
+            --surface: #f3edf7;
+            --bg: #fffbfe;
+            --text: #1d1b20;
+            --text-secondary: #49454f;
+            --easy: #4caf50;
+            --medium: #ff9800;
+            --card-shadow: 0 1px 3px rgba(0,0,0,0.12);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            overflow: hidden;
+        }
+        .app { height: 100vh; display: flex; flex-direction: column; }
+        .header {
+            background: var(--primary-light);
+            padding: 16px 20px;
+            padding-top: env(safe-area-inset-top, 16px);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+        .header h1 { font-size: 20px; font-weight: 600; color: var(--text); }
+        .header .back-btn {
+            background: none; border: none; font-size: 22px; cursor: pointer;
+            width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+            border-radius: 50%;
+        }
+        .header .back-btn:active { background: rgba(0,0,0,0.08); }
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+        }
+        .stats-card {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
+        .stat { text-align: center; }
+        .stat-icon { font-size: 28px; margin-bottom: 4px; }
+        .stat-value { font-size: 26px; font-weight: 700; color: var(--primary); }
+        .stat-label { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+        .section-title {
+            font-size: 16px; font-weight: 600; margin-bottom: 12px; color: var(--text);
+        }
+        .exercise-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 12px;
+            box-shadow: var(--card-shadow);
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+            border: 1px solid rgba(0,0,0,0.04);
+        }
+        .exercise-card:active { transform: scale(0.98); }
+        .card-header {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;
+        }
+        .card-title { font-size: 17px; font-weight: 600; }
+        .difficulty {
+            font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px;
+        }
+        .difficulty.easy { background: #e8f5e9; color: var(--easy); }
+        .difficulty.medium { background: #fff3e0; color: var(--medium); }
+        .card-desc { font-size: 14px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 10px; }
+        .card-meta { display: flex; gap: 16px; font-size: 13px; color: var(--primary); font-weight: 500; }
+        .timer-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
+        }
+        .timer-ring {
+            position: relative;
+            width: 220px; height: 220px;
+        }
+        .timer-ring svg { transform: rotate(-90deg); }
+        .timer-ring-bg { fill: none; stroke: #e0e0e0; stroke-width: 12; }
+        .timer-ring-progress { fill: none; stroke: var(--primary); stroke-width: 12; stroke-linecap: round;
+            transition: stroke-dashoffset 1s linear;
+        }
+        .timer-text {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        .timer-time { font-size: 52px; font-weight: 700; color: var(--primary); font-variant-numeric: tabular-nums; }
+        .timer-status { font-size: 14px; color: var(--secondary); margin-top: 4px; }
+        .controls {
+            display: flex; gap: 14px; margin-top: 24px; justify-content: center;
+        }
+        .btn {
+            border: none; border-radius: 24px; padding: 12px 28px; font-size: 15px;
+            font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        .btn:active { transform: scale(0.96); }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-secondary { background: #fff; color: var(--primary); border: 1.5px solid var(--primary); }
+        .instructions { margin-top: 24px; }
+        .instructions h3 { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+        .instruction-item {
+            display: flex; gap: 12px; align-items: flex-start; padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .instruction-item:last-child { border-bottom: none; }
+        .inst-num {
+            min-width: 28px; height: 28px; border-radius: 8px;
+            background: var(--primary-light); color: var(--primary);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; font-weight: 700; flex-shrink: 0;
+        }
+        .inst-text { font-size: 15px; line-height: 1.5; color: var(--text); padding-top: 3px; }
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.25s;
+        }
+        .modal-overlay.show { opacity: 1; pointer-events: all; }
+        .modal {
+            background: #fff; border-radius: 24px; padding: 28px;
+            width: 85%; max-width: 340px; text-align: center;
+            transform: scale(0.9); transition: transform 0.25s;
+        }
+        .modal-overlay.show .modal { transform: scale(1); }
+        .modal-icon { font-size: 56px; margin-bottom: 12px; }
+        .modal h2 { font-size: 22px; margin-bottom: 8px; }
+        .modal p { font-size: 14px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 20px; }
+        .modal-buttons { display: flex; flex-direction: column; gap: 10px; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="header" id="header">
+            <h1>Face Exercise</h1>
+        </div>
+        <div class="content" id="content"></div>
+    </div>
+
+    <div class="modal-overlay" id="completionModal">
+        <div class="modal">
+            <div class="modal-icon">&#9989;</div>
+            <h2>Great Job!</h2>
+            <p>You completed the exercise. Regular face exercises help tone muscles and improve circulation.</p>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="dismissModal()">Done</button>
+                <button class="btn btn-secondary" onclick="dismissModalOnly()">Stay Here</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const exercises = [
+            {
+                id: 1, name: "Jaw Release", desc: "Relax and tone your jaw muscles to reduce tension.",
+                instructions: ["Sit or stand with your spine straight.", "Move your jaw as if you are chewing with lips closed.", "Breathe deeply through your nose.", "Open your mouth wide with tongue pressed to bottom teeth.", "Hold for 5 seconds, then relax."],
+                duration: 60, category: "Jaw", difficulty: "Easy"
+            },
+            {
+                id: 2, name: "Cheek Puff", desc: "Strengthen cheek muscles and improve circulation.",
+                instructions: ["Take a deep breath and hold air in your mouth.", "Transfer the air from one cheek to the other.", "Continue slowly for the duration.", "Release the air gently."],
+                duration: 45, category: "Cheeks", difficulty: "Easy"
+            },
+            {
+                id: 3, name: "Eye Squeeze", desc: "Tighten muscles around eyes to reduce fine lines.",
+                instructions: ["Close your eyes tightly.", "Hold for 5 seconds.", "Open eyes wide.", "Repeat the squeeze and release motion."],
+                duration: 45, category: "Eyes", difficulty: "Easy"
+            },
+            {
+                id: 4, name: "Brow Raise", desc: "Smooth forehead and strengthen brow muscles.",
+                instructions: ["Place fingers just above eyebrows.", "Push eyebrows down gently with fingers.", "Try to raise eyebrows against the resistance.", "Hold for 5-10 seconds, then relax."],
+                duration: 45, category: "Forehead", difficulty: "Medium"
+            },
+            {
+                id: 5, name: "Fish Face", desc: "Tone cheeks and jawline by sucking in cheeks.",
+                instructions: ["Suck in your cheeks like a fish.", "Try to smile while holding the pose.", "Hold for 10-15 seconds.", "Relax and repeat."],
+                duration: 60, category: "Cheeks", difficulty: "Medium"
+            },
+            {
+                id: 6, name: "Neck Roll", desc: "Release neck tension and tone neck muscles.",
+                instructions: ["Slowly tilt head to one shoulder.", "Roll chin down toward chest.", "Continue rolling to the other shoulder.", "Move slowly and smoothly, then reverse."],
+                duration: 60, category: "Neck", difficulty: "Easy"
+            },
+            {
+                id: 7, name: "Tongue Twister", desc: "Strengthen tongue and jaw muscles.",
+                instructions: ["Stick your tongue out as far as possible.", "Move it side to side slowly.", "Try to touch nose with tongue tip.", "Try to touch chin with tongue tip."],
+                duration: 45, category: "Mouth", difficulty: "Easy"
+            },
+            {
+                id: 8, name: "Lip Plumper", desc: "Strengthen orbicularis oris muscle around lips.",
+                instructions: ["Purse your lips together tightly.", "Hold for 5 seconds.", "Pucker lips outward as if kissing.", "Hold for 5 seconds, then relax."],
+                duration: 45, category: "Lips", difficulty: "Easy"
+            }
+        ];
+
+        let completedCount = parseInt(localStorage.getItem('completedCount') || '0');
+        let currentExercise = null;
+        let timerSeconds = 0;
+        let timerInterval = null;
+        let isRunning = false;
+
+        function formatTime(sec) {
+            const m = Math.floor(sec / 60);
+            const s = sec % 60;
+            return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+        }
+
+        function renderHome() {
+            const header = document.getElementById('header');
+            header.innerHTML = '<h1>Face Exercise</h1>';
+
+            let html = `
+                <div class="stats-card">
+                    <div class="stat">
+                        <div class="stat-icon">&#128526;</div>
+                        <div class="stat-value">${exercises.length}</div>
+                        <div class="stat-label">Exercises</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-icon">&#9201;</div>
+                        <div class="stat-value">${completedCount}</div>
+                        <div class="stat-label">Completed</div>
+                    </div>
+                </div>
+                <div class="section-title">Choose an Exercise</div>
+            `;
+            exercises.forEach(ex => {
+                html += `
+                    <div class="exercise-card" onclick="openExercise(${ex.id})">
+                        <div class="card-header">
+                            <div class="card-title">${ex.name}</div>
+                            <div class="difficulty ${ex.difficulty.toLowerCase()}">${ex.difficulty}</div>
+                        </div>
+                        <div class="card-desc">${ex.desc}</div>
+                        <div class="card-meta">
+                            <span>&#9201; ${ex.duration}s</span>
+                            <span>${ex.category}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('content').innerHTML = html;
+        }
+
+        function openExercise(id) {
+            currentExercise = exercises.find(e => e.id === id);
+            timerSeconds = currentExercise.duration;
+            isRunning = false;
+            clearInterval(timerInterval);
+            renderExercise();
+        }
+
+        function renderExercise() {
+            const header = document.getElementById('header');
+            header.innerHTML = `
+                <button class="back-btn" onclick="goHome()">&#8592;</button>
+                <h1>${currentExercise.name}</h1>
+            `;
+
+            const radius = 90;
+            const circumference = 2 * Math.PI * radius;
+            const progress = currentExercise.duration > 0 ? timerSeconds / currentExercise.duration : 0;
+            const offset = circumference * (1 - progress);
+
+            let btnHtml = '';
+            if (!isRunning && timerSeconds === currentExercise.duration) {
+                btnHtml = `<button class="btn btn-primary" onclick="startTimer()">&#9654; Start</button>`;
+            } else if (isRunning) {
+                btnHtml = `<button class="btn btn-secondary" onclick="pauseTimer()">&#9208; Pause</button>`;
+            } else {
+                btnHtml = `<button class="btn btn-primary" onclick="startTimer()">&#9654; Resume</button>`;
+            }
+
+            let instructionsHtml = currentExercise.instructions.map((inst, i) => `
+                <div class="instruction-item">
+                    <div class="inst-num">${i + 1}</div>
+                    <div class="inst-text">${inst}</div>
+                </div>
+            `).join('');
+
+            document.getElementById('content').innerHTML = `
+                <div class="timer-section">
+                    <div class="timer-ring">
+                        <svg width="220" height="220" viewBox="0 0 220 220">
+                            <circle class="timer-ring-bg" cx="110" cy="110" r="${radius}"/>
+                            <circle class="timer-ring-progress" cx="110" cy="110" r="${radius}"
+                                stroke-dasharray="${circumference}"
+                                stroke-dashoffset="${offset}"/>
+                        </svg>
+                        <div class="timer-text">
+                            <div class="timer-time">${formatTime(timerSeconds)}</div>
+                            ${isRunning ? '<div class="timer-status">Keep going!</div>' : ''}
+                        </div>
+                    </div>
+                    <div class="controls">
+                        ${btnHtml}
+                        <button class="btn btn-secondary" onclick="resetTimer()">&#8634; Reset</button>
+                    </div>
+                </div>
+                <div class="instructions">
+                    <h3>Instructions</h3>
+                    ${instructionsHtml}
+                </div>
+            `;
+        }
+
+        function startTimer() {
+            if (isRunning) return;
+            isRunning = true;
+            renderExercise();
+            timerInterval = setInterval(() => {
+                timerSeconds--;
+                if (timerSeconds <= 0) {
+                    timerSeconds = 0;
+                    clearInterval(timerInterval);
+                    isRunning = false;
+                    completedCount++;
+                    localStorage.setItem('completedCount', completedCount);
+                    renderExercise();
+                    showModal();
+                } else {
+                    renderExercise();
+                }
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            isRunning = false;
+            clearInterval(timerInterval);
+            renderExercise();
+        }
+
+        function resetTimer() {
+            isRunning = false;
+            clearInterval(timerInterval);
+            timerSeconds = currentExercise.duration;
+            renderExercise();
+        }
+
+        function goHome() {
+            currentExercise = null;
+            isRunning = false;
+            clearInterval(timerInterval);
+            renderHome();
+        }
+
+        function showModal() {
+            document.getElementById('completionModal').classList.add('show');
+        }
+
+        function dismissModal() {
+            document.getElementById('completionModal').classList.remove('show');
+            goHome();
+        }
+
+        function dismissModalOnly() {
+            document.getElementById('completionModal').classList.remove('show');
+        }
+
+        // Register service worker for PWA
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(() => {});
+        }
+
+        renderHome();
+    </script>
+</body>
+</html>
