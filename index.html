@@ -130,7 +130,12 @@
     </div>
 
     <script>
-        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1i7SCzTGkyNKDKRG7kKYiG5WE8dIhrXZuDF-3efQxxH0/export?format=csv';
+        const EMBEDDED_DATA = [
+            { date: '2026년 3월', cash: 201433670, stocks: 125380559, pension: 151563660, realestate: 2200000000, debt: 349025014, net: 2329352875, change: 0 },
+            { date: '2026년 4월', cash: 203233670, stocks: 132465157, pension: 156698365, realestate: 2200000000, debt: 349025014, net: 2343372178, change: 14019303 },
+            { date: '2026년 5월', cash: 177633670, stocks: 200073999, pension: 181925150, realestate: 2200000000, debt: 349025014, net: 2410607805, change: 67235627 },
+            { date: '2026년 6월', cash: 177633670, stocks: 200073999, pension: 181925150, realestate: 2200000000, debt: 349025014, net: 2410607805, change: 0 }
+        ];
 
         function formatWon(value) {
             if (value >= 100000000) {
@@ -169,41 +174,8 @@
         }
 
         async function loadData() {
-            try {
-                const response = await fetch(SHEET_URL);
-                const csv = await response.text();
-                const rows = csv.split('\n').filter(r => r.trim());
-                
-                const data = [];
-                
-                for (let i = 1; i < rows.length; i++) {
-                    const cols = parseCSVLine(rows[i]).map(c => c.replace(/"/g, ''));
-                    if (cols[0] && cols[0].includes('2026')) {
-                        data.push({
-                            date: cols[0],
-                            cash: parseWon(cols[1]),
-                            stocks: parseWon(cols[2]),
-                            pension: parseWon(cols[3]),
-                            realestate: parseWon(cols[4]),
-                            debt: parseWon(cols[5]),
-                            net: parseWon(cols[6]),
-                            change: parseWon(cols[7])
-                        });
-                    }
-                }
-                
-                renderDashboard(data);
-            } catch (err) {
-                document.getElementById('app').innerHTML = `
-                    <div class="error">
-                        <h3>Failed to load data</h3>
-                        <p>${err.message}</p>
-                        <p style="margin-top: 12px; font-size: 13px;">
-                            Make sure your Google Sheet is shared with "Anyone with the link can view"
-                        </p>
-                    </div>
-                `;
-            }
+            // Use embedded data for static hosting (GitHub Pages)
+            renderDashboard(EMBEDDED_DATA);
         }
 
         function renderDashboard(data) {
