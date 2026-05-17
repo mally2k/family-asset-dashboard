@@ -354,7 +354,12 @@ function renderDashboard(data) {
 
     document.getElementById('contentArea').innerHTML = html;
 
-    // Stacked Area Chart (data in 만원)
+    // Stacked Area Chart — manual cumulative fill for guaranteed correct stacking
+    const cumRealEstate = trends.map(t => (t.categories.real_estate || 0) / 10000);
+    const cumStocks       = trends.map((t, i) => cumRealEstate[i] + (t.categories.stocks || 0) / 10000);
+    const cumPension      = trends.map((t, i) => cumStocks[i] + (t.categories.pension || 0) / 10000);
+    const cumCash         = trends.map((t, i) => cumPension[i] + (t.categories.cash || 0) / 10000);
+
     const ctxTrend = document.getElementById('trendChart').getContext('2d');
     new Chart(ctxTrend, {
         type: 'line',
@@ -363,27 +368,27 @@ function renderDashboard(data) {
             datasets: [
                 {
                     label: '부동산',
-                    data: trends.map(t => (t.categories.real_estate || 0) / 10000),
-                    borderColor: COLORS.real_estate, backgroundColor: COLORS.real_estate + 'B0',
-                    fill: true, tension: 0.3, pointRadius: 4, stack: 'assets'
+                    data: cumRealEstate,
+                    borderColor: COLORS.real_estate, backgroundColor: COLORS.real_estate + 'A0',
+                    fill: 'origin', tension: 0.3, pointRadius: 3
                 },
                 {
                     label: '주식',
-                    data: trends.map(t => (t.categories.stocks || 0) / 10000),
-                    borderColor: COLORS.domestic_stock, backgroundColor: COLORS.domestic_stock + 'B0',
-                    fill: true, tension: 0.3, pointRadius: 4, stack: 'assets'
+                    data: cumStocks,
+                    borderColor: COLORS.domestic_stock, backgroundColor: COLORS.domestic_stock + 'A0',
+                    fill: '-1', tension: 0.3, pointRadius: 3
                 },
                 {
                     label: '개인연금',
-                    data: trends.map(t => (t.categories.pension || 0) / 10000),
-                    borderColor: COLORS.pension, backgroundColor: COLORS.pension + 'B0',
-                    fill: true, tension: 0.3, pointRadius: 4, stack: 'assets'
+                    data: cumPension,
+                    borderColor: COLORS.pension, backgroundColor: COLORS.pension + 'A0',
+                    fill: '-1', tension: 0.3, pointRadius: 3
                 },
                 {
                     label: '현금/예금',
-                    data: trends.map(t => (t.categories.cash || 0) / 10000),
-                    borderColor: COLORS.cash, backgroundColor: COLORS.cash + 'B0',
-                    fill: true, tension: 0.3, pointRadius: 4, stack: 'assets'
+                    data: cumCash,
+                    borderColor: COLORS.cash, backgroundColor: COLORS.cash + 'A0',
+                    fill: '-1', tension: 0.3, pointRadius: 3
                 },
             ]
         },
@@ -394,32 +399,25 @@ function renderDashboard(data) {
                 legend: { position: 'top', labels: { usePointStyle: true, padding: 16 } },
                 tooltip: {
                     callbacks: {
-                        label: (ctx) => ctx.dataset.label + ': ' + formatWonChart(ctx.raw),
+                        label: (ctx) => {
+                            const idx = ctx.dataIndex;
+                            let raw = 0;
+                            if (ctx.datasetIndex === 0) raw = cumRealEstate[idx];
+                            else if (ctx.datasetIndex === 1) raw = cumStocks[idx] - cumRealEstate[idx];
+                            else if (ctx.datasetIndex === 2) raw = cumPension[idx] - cumStocks[idx];
+                            else raw = cumCash[idx] - cumPension[idx];
+                            return ctx.dataset.label + ': ' + formatWonChart(raw);
+                        },
                         footer: (tooltipItems) => {
-                            let total = 0;
-                            tooltipItems.forEach(item => total += (item.raw * 10000));
-                            return '총 자산: ' + formatWon(total);
+                            const idx = tooltipItems[0].dataIndex;
+                            return '총 자산: ' + formatWonChart(cumCash[idx]);
                         }
                     }
-                },
-                datalabels: {
-                    display: 'auto',
-                    align: 'top',
-                    anchor: 'end',
-                    offset: 3,
-                    color: '#333',
-                    font: { size: 10, weight: '600' },
-                    formatter: (value) => formatWonChart(value),
-                    backgroundColor: 'rgba(255,255,255,0.75)',
-                    borderRadius: 4,
-                    padding: { top: 1, bottom: 1, left: 3, right: 3 },
-                    clip: false
                 }
             },
             scales: {
                 x: { grid: { display: false } },
                 y: {
-                    stacked: true,
                     ticks: { callback: v => formatWonChart(v) },
                     grid: { color: '#f0f0f0' }
                 }
