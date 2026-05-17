@@ -100,7 +100,7 @@
             margin-bottom: 16px; box-shadow: var(--card-shadow);
         }
         .chart-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; color: var(--text); }
-        .chart-container { position: relative; height: 360px; }
+        .chart-container { position: relative; height: 420px; }
         .chart-container.small { height: 240px; }
         .chart-container.trend { height: 300px; }
         .alloc-grid {
@@ -420,7 +420,6 @@ function renderDashboard(data) {
                 x: { grid: { display: false } },
                 y: {
                     stacked: true,
-                    min: computeStackedMin(trends),
                     ticks: { callback: v => formatWonChart(v) },
                     grid: { color: '#f0f0f0' }
                 }
