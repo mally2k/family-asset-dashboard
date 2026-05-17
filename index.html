@@ -354,7 +354,7 @@ function renderDashboard(data) {
 
     document.getElementById('contentArea').innerHTML = html;
 
-    // Stacked Area Chart — manual cumulative fill for guaranteed correct stacking
+    // Stacked Area Chart — hard-stacked with cumulative values
     const cumRealEstate = trends.map(t => (t.categories.real_estate || 0) / 10000);
     const cumStocks       = trends.map((t, i) => cumRealEstate[i] + (t.categories.stocks || 0) / 10000);
     const cumPension      = trends.map((t, i) => cumStocks[i] + (t.categories.pension || 0) / 10000);
@@ -376,19 +376,19 @@ function renderDashboard(data) {
                     label: '주식',
                     data: cumStocks,
                     borderColor: COLORS.domestic_stock, backgroundColor: COLORS.domestic_stock + 'A0',
-                    fill: '-1', tension: 0.3, pointRadius: 3
+                    fill: -1, tension: 0.3, pointRadius: 3
                 },
                 {
                     label: '개인연금',
                     data: cumPension,
                     borderColor: COLORS.pension, backgroundColor: COLORS.pension + 'A0',
-                    fill: '-1', tension: 0.3, pointRadius: 3
+                    fill: -1, tension: 0.3, pointRadius: 3
                 },
                 {
                     label: '현금/예금',
                     data: cumCash,
                     borderColor: COLORS.cash, backgroundColor: COLORS.cash + 'A0',
-                    fill: '-1', tension: 0.3, pointRadius: 3
+                    fill: -1, tension: 0.3, pointRadius: 3
                 },
             ]
         },
@@ -418,6 +418,7 @@ function renderDashboard(data) {
             scales: {
                 x: { grid: { display: false } },
                 y: {
+                    min: Math.floor(Math.min(...cumCash) * 0.95),
                     ticks: { callback: v => formatWonChart(v) },
                     grid: { color: '#f0f0f0' }
                 }
