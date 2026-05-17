@@ -364,26 +364,26 @@ function renderDashboard(data) {
                 {
                     label: '부동산',
                     data: trends.map(t => (t.categories.real_estate || 0) / 10000),
-                    borderColor: COLORS.real_estate, backgroundColor: COLORS.real_estate + '60',
-                    fill: true, tension: 0.3, pointRadius: 4
+                    borderColor: COLORS.real_estate, backgroundColor: COLORS.real_estate + 'B0',
+                    fill: true, tension: 0.3, pointRadius: 4, stack: 'assets'
                 },
                 {
                     label: '주식',
                     data: trends.map(t => (t.categories.stocks || 0) / 10000),
-                    borderColor: COLORS.domestic_stock, backgroundColor: COLORS.domestic_stock + '60',
-                    fill: true, tension: 0.3, pointRadius: 4
+                    borderColor: COLORS.domestic_stock, backgroundColor: COLORS.domestic_stock + 'B0',
+                    fill: true, tension: 0.3, pointRadius: 4, stack: 'assets'
                 },
                 {
                     label: '개인연금',
                     data: trends.map(t => (t.categories.pension || 0) / 10000),
-                    borderColor: COLORS.pension, backgroundColor: COLORS.pension + '60',
-                    fill: true, tension: 0.3, pointRadius: 4
+                    borderColor: COLORS.pension, backgroundColor: COLORS.pension + 'B0',
+                    fill: true, tension: 0.3, pointRadius: 4, stack: 'assets'
                 },
                 {
                     label: '현금/예금',
                     data: trends.map(t => (t.categories.cash || 0) / 10000),
-                    borderColor: COLORS.cash, backgroundColor: COLORS.cash + '60',
-                    fill: true, tension: 0.3, pointRadius: 4
+                    borderColor: COLORS.cash, backgroundColor: COLORS.cash + 'B0',
+                    fill: true, tension: 0.3, pointRadius: 4, stack: 'assets'
                 },
             ]
         },
