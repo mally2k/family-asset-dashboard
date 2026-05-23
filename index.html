@@ -199,6 +199,8 @@
         .stat-tile.stock::before { background: var(--danger); }
         .stat-tile.pension::before { background: var(--info); }
         .stat-tile.cash::before { background: var(--success); }
+        .stat-tile.crypto::before { background: var(--crypto); }
+        .stat-tile.debt::before { background: var(--warning); }
         .stat-icon {
             width: 36px; height: 36px; border-radius: 10px;
             display: flex; align-items: center; justify-content: center;
@@ -208,6 +210,8 @@
         .stat-icon.stock { background: rgba(239,68,68,0.1); color: var(--danger); }
         .stat-icon.pension { background: rgba(59,130,246,0.1); color: var(--info); }
         .stat-icon.cash { background: rgba(16,185,129,0.1); color: var(--success); }
+        .stat-icon.crypto { background: rgba(147,51,234,0.1); color: var(--crypto); }
+        .stat-icon.debt { background: rgba(245,158,11,0.1); color: var(--warning); }
         .stat-tile-label { font-size: 12px; color: var(--text-secondary); font-weight: 500; margin-bottom: 4px; }
         .stat-tile-value { font-size: 18px; font-weight: 700; }
         .stat-tile-change {
@@ -916,6 +920,19 @@ function renderAll(data) {
             <div class="stat-tile-label">현금/예금</div>
             <div class="stat-tile-value">${formatWon(latest.categories.cash||0)}</div>
             <div class="stat-tile-change ${cashChg.val>=0?'up':'down'}">${cashChg.val>=0?'+':''}${cashChg.pct}%</div>
+        </div>
+        <div class="stat-tile crypto" onclick="showDetail('crypto')">
+            <span class="material-symbols-rounded detail-arrow">chevron_right</span>
+            <div class="stat-icon crypto"><span class="material-symbols-rounded">currency_bitcoin</span></div>
+            <div class="stat-tile-label">가상화폐</div>
+            <div class="stat-tile-value">${formatWon(latest.categories.crypto||0)}</div>
+            <div class="stat-tile-change ${cryptoChg.val>=0?'up':'down'}">${cryptoChg.val>=0?'+':''}${cryptoChg.pct}%</div>
+        </div>
+        <div class="stat-tile debt" onclick="showDetail('debt')">
+            <span class="material-symbols-rounded detail-arrow">chevron_right</span>
+            <div class="stat-icon debt"><span class="material-symbols-rounded">credit_card</span></div>
+            <div class="stat-tile-label">부채</div>
+            <div class="stat-tile-value">${formatWon(data.total_debt_krw)}</div>
         </div>
     `;
 
