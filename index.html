@@ -651,23 +651,16 @@ function renderDashboard(data) {
     const pensionChange = getChange('pension');
     const cryptoChange = getChange('crypto');
 
-    // 목적별 집계 (detail_breakdown 기준)
+    // 목적별 집계 (상세 자산 시트 G열 기준, 부동산/대출 제외)
     const purposeMap = {};
-    Object.values(data.detail_breakdown || {}).forEach(list => {
+    ['cash', 'stocks', 'pension', 'crypto'].forEach(cat => {
+        const list = data.detail_breakdown?.[cat] || [];
         list.forEach(item => {
             const p = item.purpose || '기타';
             if (!purposeMap[p]) purposeMap[p] = 0;
             purposeMap[p] += item.amount || 0;
         });
     });
-    // 부동산도 추가
-    if (data.detail_breakdown && data.detail_breakdown.real_estate) {
-        data.detail_breakdown.real_estate.forEach(item => {
-            const p = item.purpose || '기타';
-            if (!purposeMap[p]) purposeMap[p] = 0;
-            purposeMap[p] += item.amount || 0;
-        });
-    }
     const purposeList = Object.entries(purposeMap).map(([p, a]) => ({ purpose: p, amount: a })).sort((a, b) => b.amount - a.amount);
 
     // 만기 알림 (cash 상세 내역 중 maturity가 있는 것)
