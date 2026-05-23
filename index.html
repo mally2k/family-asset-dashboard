@@ -365,6 +365,8 @@ pinInputs.forEach((input, idx) => {
     input.addEventListener('input', (e) => {
         document.getElementById('pinError').textContent = '';
         if (e.target.value && idx < pinInputs.length - 1) pinInputs[idx + 1].focus();
+        const entered = Array.from(pinInputs).map(i => i.value).join('');
+        if (entered.length === 6) checkPassword();
     });
     input.addEventListener('keydown', (e) => {
         if (e.key === 'Backspace' && !e.target.value && idx > 0) pinInputs[idx - 1].focus();
