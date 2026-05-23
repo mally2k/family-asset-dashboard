@@ -7,6 +7,7 @@
     <title>유주네 자산 현황</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
             --primary: #6650a4;
@@ -61,24 +62,27 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .top-bar {
             display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 20px; flex-wrap: wrap; gap: 10px;
         }
         .top-bar h1 { font-size: 22px; font-weight: 700; color: var(--primary); }
-        .share-btn {
+        .top-actions { display: flex; gap: 8px; }
+        .top-btn {
             background: var(--primary-light); color: var(--primary); border: none;
-            border-radius: 24px; padding: 10px 20px; font-size: 14px; font-weight: 600;
+            border-radius: 24px; padding: 10px 18px; font-size: 13px; font-weight: 600;
             cursor: pointer; display: flex; align-items: center; gap: 6px;
             transition: all 0.2s;
         }
-        .share-btn:active { transform: scale(0.95); }
-        .share-btn.copied { background: var(--success); color: white; }
+        .top-btn:active { transform: scale(0.95); }
+        .top-btn.copied { background: var(--success); color: white; }
         .stats-grid {
             display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px;
         }
         .stat-card {
             background: #fff; border-radius: var(--radius); padding: 18px;
             box-shadow: var(--card-shadow); position: relative; overflow: hidden;
+            cursor: pointer; transition: transform 0.15s;
         }
+        .stat-card:active { transform: scale(0.98); }
         .stat-card::before {
             content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
         }
@@ -97,14 +101,21 @@
         }
         .stat-change.up { color: var(--success); background: #e8f5e9; }
         .stat-change.down { color: var(--danger); background: #ffebee; }
+        .detail-btn {
+            position: absolute; top: 14px; right: 14px;
+            background: var(--surface); color: var(--primary);
+            border: none; border-radius: 12px; padding: 4px 10px;
+            font-size: 11px; font-weight: 600; cursor: pointer;
+        }
         .chart-section {
             background: #fff; border-radius: var(--radius); padding: 20px;
             margin-bottom: 16px; box-shadow: var(--card-shadow);
         }
         .chart-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; color: var(--text); }
         .chart-container { position: relative; height: 420px; }
-        .chart-container.small { height: 240px; }
+        .chart-container.small { height: 260px; }
         .chart-container.trend { height: 300px; }
+        .chart-container.xsmall { height: 200px; }
         .alloc-grid {
             display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 16px;
         }
@@ -129,17 +140,68 @@
         .footer {
             text-align: center; padding: 20px; color: var(--text-secondary); font-size: 12px;
         }
-        .suggestion-list { display: flex; flex-direction: column; gap: 12px; }
-        .suggestion-item {
-            background: var(--surface); border-radius: 16px; padding: 16px;
-            border-left: 4px solid var(--primary);
+        .maturity-list { display: flex; flex-direction: column; gap: 10px; }
+        .maturity-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 14px; border-radius: 12px; background: var(--surface);
         }
-        .suggestion-title { font-size: 14px; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
-        .suggestion-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
-        .suggestion-badge {
-            display: inline-block; background: var(--primary-light); color: var(--primary-dark);
-            font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; margin-top: 6px;
+        .maturity-badge {
+            font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 10px;
+            white-space: nowrap;
         }
+        .maturity-badge.danger { background: #ffebee; color: var(--danger); }
+        .maturity-badge.warning { background: #fff3e0; color: #e65100; }
+        .maturity-badge.success { background: #e8f5e9; color: var(--success); }
+        .maturity-info { flex: 1; }
+        .maturity-name { font-size: 13px; font-weight: 600; }
+        .maturity-sub { font-size: 12px; color: var(--text-secondary); }
+        .maturity-amount { font-size: 13px; font-weight: 700; color: var(--primary); }
+
+        .load-modal, .detail-modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+            display: none; z-index: 2000; align-items: center; justify-content: center;
+        }
+        .load-modal.visible, .detail-modal.visible { display: flex; }
+        .load-modal-box {
+            background: #fff; border-radius: var(--radius); padding: 24px;
+            max-width: 360px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+        .detail-modal-box {
+            background: #fff; border-radius: var(--radius); padding: 24px;
+            max-width: 520px; width: 90%; max-height: 80vh; overflow-y: auto;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+        .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+        .modal-desc { font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; }
+        .load-option {
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px; border-radius: 12px; border: 2px solid var(--surface);
+            margin-bottom: 10px; cursor: pointer; transition: all 0.2s;
+        }
+        .load-option:hover { border-color: var(--primary-light); background: var(--surface); }
+        .load-close, .detail-close {
+            width: 100%; padding: 12px; margin-top: 8px;
+            background: var(--surface); border: none; border-radius: 12px;
+            font-size: 14px; font-weight: 600; color: var(--text-secondary);
+            cursor: pointer;
+        }
+        .detail-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .detail-title { font-size: 18px; font-weight: 700; }
+        .detail-x { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary); }
+        .detail-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .detail-table th, .detail-table td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; }
+        .detail-table th { font-weight: 600; color: var(--text-secondary); background: var(--surface); }
+        .detail-table td { color: var(--text); }
+        .detail-total { margin-top: 12px; padding: 12px; background: var(--surface); border-radius: 12px; font-size: 14px; font-weight: 700; text-align: right; }
+
+        #fileInput { display: none; }
+        .toast {
+            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px);
+            background: #323232; color: #fff; padding: 12px 24px; border-radius: 24px;
+            font-size: 14px; font-weight: 500; z-index: 3000; opacity: 0;
+            transition: all 0.3s ease; pointer-events: none;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
         @media (min-width: 768px) {
             .stats-grid { grid-template-columns: repeat(4, 1fr); }
             .alloc-grid { grid-template-columns: repeat(3, 1fr); }
@@ -167,9 +229,14 @@
 <div class="app" id="mainApp">
     <div class="top-bar">
         <h1>유주네 자산 현황</h1>
-        <button class="share-btn" id="shareBtn" onclick="shareLink()">
-            <span>&#128279;</span> <span id="shareText">공유</span>
-        </button>
+        <div class="top-actions">
+            <button class="top-btn" onclick="openLoadModal()">
+                <span>&#128229;</span> 데이터로드
+            </button>
+            <button class="top-btn" id="shareBtn" onclick="shareLink()">
+                <span>&#128279;</span> <span id="shareText">공유</span>
+            </button>
+        </div>
     </div>
     <div id="contentArea">
         <div class="loading">
@@ -182,9 +249,41 @@
     </div>
 </div>
 
+<div class="load-modal" id="loadModal" onclick="if(event.target===this)closeLoadModal()">
+    <div class="load-modal-box">
+        <div class="modal-title">데이터 불러오기</div>
+        <div class="modal-desc">엑셀 파일을 업로드하거나 GitHub에서 최신 데이터를 가져옵니다.</div>
+        <div class="load-option" onclick="uploadExcel()">
+            <div style="font-size:24px">&#128193;</div>
+            <div style="flex:1">
+                <div style="font-size:14px;font-weight:700">엑셀 파일 업로드</div>
+                <div style="font-size:12px;color:var(--text-secondary)">수정한 .xlsx 파일을 선택</div>
+            </div>
+        </div>
+        <div class="load-option" onclick="fetchFromGitHub()">
+            <div style="font-size:24px">&#127760;</div>
+            <div style="flex:1">
+                <div style="font-size:14px;font-weight:700">GitHub에서 가져오기</div>
+                <div style="font-size:12px;color:var(--text-secondary)">최신 엑셀 데이터를 자동 다운로드</div>
+            </div>
+        </div>
+        <button class="load-close" onclick="closeLoadModal()">취소</button>
+    </div>
+</div>
+
+<div class="detail-modal" id="detailModal" onclick="if(event.target===this)closeDetailModal()">
+    <div class="detail-modal-box" id="detailModalBox"></div>
+</div>
+
+<input type="file" id="fileInput" accept=".xlsx" onchange="handleFileUpload(event)">
+<div class="toast" id="toast"></div>
+
 <script>
 const CORRECT_PIN = '713907';
-const EMBEDDED_DATA = {
+const GITHUB_RAW_URL = 'https://raw.githubusercontent.com/mally2k/family-asset-dashboard/main/%EC%9C%A0%EC%A3%BC%EB%84%A4%20%EC%9E%90%EC%82%B0%20%ED%98%84%ED%99%A9.xlsx';
+const TODAY = new Date('2026-05-23');
+
+let EMBEDDED_DATA = {
   "total_valuation_krw": 2759632819,
   "net_valuation_krw": 2410607805,
   "total_debt_krw": 349025014,
@@ -199,54 +298,70 @@ const EMBEDDED_DATA = {
   "historical_trends": [
     {"period": "2026-03", "net_assets_krw": 2329352875, "categories": {"cash": 201433670, "stocks": 121401753, "pension": 151563660, "crypto": 3978806, "real_estate": 2200000000}},
     {"period": "2026-04", "net_assets_krw": 2343372178, "categories": {"cash": 203233670, "stocks": 128191140, "pension": 156698365, "crypto": 4274017, "real_estate": 2200000000}},
-    {"period": "2026-05", "net_assets_krw": 2410607805, "categories": {"cash": 177633670, "stocks": 195123665, "pension": 181925150, "crypto": 4950334, "real_estate": 2200000000}},
-    {"period": "2026-06", "net_assets_krw": 2410607805, "categories": {"cash": 177633670, "stocks": 195123665, "pension": 181925150, "crypto": 4950334, "real_estate": 2200000000}}
+    {"period": "2026-05", "net_assets_krw": 2410607805, "categories": {"cash": 177633670, "stocks": 195123665, "pension": 181925150, "crypto": 4950334, "real_estate": 2200000000}}
   ],
-  "metadata": {"source": "유주네 자산 현황.xlsx", "last_updated": "2026-06"}
+  "detail_breakdown": {
+    "real_estate": [{"name": "아파트", "amount": 2200000000, "owner": "공동", "purpose": "주거", "return": null, "maturity": "-"}],
+    "stocks": [
+      {"name": "SPY", "amount": 28945596, "owner": "유나", "purpose": "노후", "return": 0.384, "maturity": "-"},
+      {"name": "SCHD", "amount": 8939871, "owner": "유나", "purpose": "노후", "return": 0.1396, "maturity": "-"},
+      {"name": "하이닉스", "amount": 14814000, "owner": "유나", "purpose": "주택", "return": 0.2413, "maturity": "-"},
+      {"name": "TIME 차이나AI테크액티브", "amount": 8008800, "owner": "종현", "purpose": "여행", "return": 0.6428, "maturity": "-"},
+      {"name": "ACE 미국나스닥100", "amount": 2195255, "owner": "종현", "purpose": "여행", "return": 0.3704, "maturity": "-"},
+      {"name": "ACE 미국 S&P500", "amount": 1882320, "owner": "종현", "purpose": "여행", "return": 0.2254, "maturity": "-"},
+      {"name": "삼성전자", "amount": 47996000, "owner": "종현", "purpose": "우리사주", "return": 0.7695, "maturity": "-"},
+      {"name": "삼성전자", "amount": 8520000, "owner": "종현", "purpose": "우리사주", "return": 4.192, "maturity": "-"},
+      {"name": "SK하이닉스", "amount": 24466000, "owner": "종현", "purpose": "차", "return": 0.6394, "maturity": "-"},
+      {"name": "삼성전자", "amount": 11928000, "owner": "유주", "purpose": "자녀", "return": 3.4699, "maturity": "-"},
+      {"name": "알파벳", "amount": 6994680, "owner": "유주", "purpose": "자녀", "return": 0.3036, "maturity": "-"},
+      {"name": "QQQ", "amount": 15569376, "owner": "유주", "purpose": "자녀", "return": 0.1365, "maturity": "-"},
+      {"name": "S&P 500", "amount": 14863767, "owner": "유주", "purpose": "자녀", "return": 0.227, "maturity": "-"}
+    ],
+    "pension": [
+      {"name": "TIGER 미국 S&P500", "amount": 32125500, "owner": "유나", "purpose": "노후", "return": 0.4848, "maturity": "-"},
+      {"name": "TIME K바이오액티브", "amount": 1123850, "owner": "유나", "purpose": "노후", "return": 0.0496, "maturity": "-"},
+      {"name": "TIGER 글로벌AI액티브", "amount": 32026560, "owner": "유나", "purpose": "노후", "return": 1.0797, "maturity": "-"},
+      {"name": "TIME 차이나AI테크액티브", "amount": 6816000, "owner": "종현", "purpose": "노후", "return": 0.4936, "maturity": "-"},
+      {"name": "ACE 미국나스닥100", "amount": 57842640, "owner": "종현", "purpose": "노후", "return": 0.3862, "maturity": "-"},
+      {"name": "ACE 미국 S&P500", "amount": 48229650, "owner": "종현", "purpose": "노후", "return": 0.2567, "maturity": "-"},
+      {"name": "퇴직연금 IRP", "amount": 3760950, "owner": "종현", "purpose": "노후", "return": 0.2536, "maturity": "-"}
+    ],
+    "cash": [
+      {"name": "새마을금고", "amount": 18000000, "owner": "유나", "purpose": "주택", "return": null, "maturity": "2026.10.13", "type": "예금"},
+      {"name": "새마을금고", "amount": 84949683, "owner": "유나", "purpose": "주택", "return": null, "maturity": "2026.12.29", "type": "예금"},
+      {"name": "새마을금고", "amount": 2900000, "owner": "유나", "purpose": "저축공제", "return": null, "maturity": "-", "type": "적금"},
+      {"name": "신한은행", "amount": 16940000, "owner": "유나", "purpose": "주택청약", "return": null, "maturity": "-", "type": "적금"},
+      {"name": "우리은행", "amount": 2500000, "owner": "유나", "purpose": "차", "return": null, "maturity": "2026.06.19", "type": "적금"},
+      {"name": "우리은행", "amount": 10263987, "owner": "유나", "purpose": "차", "return": null, "maturity": "2026.12.19", "type": "예금"},
+      {"name": "새마을금고", "amount": 27600000, "owner": "종현", "purpose": "주택", "return": null, "maturity": "2030.10.21", "type": "예금"},
+      {"name": "기업은행", "amount": 14480000, "owner": "종현", "purpose": "주택청약", "return": null, "maturity": "-", "type": "적금"}
+    ],
+    "crypto": [
+      {"name": "비트코인", "amount": 2986000, "owner": "유주", "purpose": "자녀", "return": -0.1455, "maturity": "-"},
+      {"name": "이더리움", "amount": 1964334, "owner": "유주", "purpose": "자녀", "return": -0.2397, "maturity": "-"}
+    ]
+  },
+  "metadata": {"source": "유주네 자산 현황.xlsx", "last_updated": "2026-05"}
 };
 
 const COLORS = {
-    domestic_stock: '#ef5350',
-    overseas_stock: '#ff7043',
-    pension: '#2196f3',
-    cash: '#4caf50',
-    savings: '#ff9800',
-    crypto: '#9c27b0',
-    real_estate: '#795548',
-    debt: '#ef5350',
-};
-
-const LABELS = {
-    domestic_stock: '국내 주식',
-    overseas_stock: '해외 주식',
-    pension: '개인연금',
-    cash: '현금/예금',
-    savings: '적금',
-    crypto: '가상화폐',
-    real_estate: '부동산',
-    debt: '부채',
+    domestic_stock: '#ef5350', overseas_stock: '#ff7043', pension: '#2196f3',
+    cash: '#4caf50', savings: '#ff9800', crypto: '#9c27b0',
+    real_estate: '#795548', debt: '#ef5350',
 };
 
 const datalabelsPlugin = window.ChartDataLabels || window.chartjsPluginDatalabels;
-if (datalabelsPlugin) {
-    Chart.register(datalabelsPlugin);
-}
+if (datalabelsPlugin) { Chart.register(datalabelsPlugin); }
 
 const pinInputs = document.querySelectorAll('#pinInputs input');
 pinInputs.forEach((input, idx) => {
     input.addEventListener('input', (e) => {
         document.getElementById('pinError').textContent = '';
-        if (e.target.value && idx < pinInputs.length - 1) {
-            pinInputs[idx + 1].focus();
-        }
+        if (e.target.value && idx < pinInputs.length - 1) pinInputs[idx + 1].focus();
     });
     input.addEventListener('keydown', (e) => {
-        if (e.key === 'Backspace' && !e.target.value && idx > 0) {
-            pinInputs[idx - 1].focus();
-        }
-        if (e.key === 'Enter') {
-            checkPassword();
-        }
+        if (e.key === 'Backspace' && !e.target.value && idx > 0) pinInputs[idx - 1].focus();
+        if (e.key === 'Enter') checkPassword();
     });
 });
 
@@ -264,30 +379,185 @@ function checkPassword() {
 }
 
 function shareLink() {
-    const url = window.location.href;
-    navigator.clipboard.writeText(url).then(() => {
+    navigator.clipboard.writeText(window.location.href).then(() => {
         const btn = document.getElementById('shareBtn');
         const text = document.getElementById('shareText');
-        btn.classList.add('copied');
-        text.textContent = '복사완료!';
-        setTimeout(() => {
-            btn.classList.remove('copied');
-            text.textContent = '공유';
-        }, 2000);
+        btn.classList.add('copied'); text.textContent = '복사완료!';
+        setTimeout(() => { btn.classList.remove('copied'); text.textContent = '공유'; }, 2000);
     });
+}
+
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function openLoadModal() { document.getElementById('loadModal').classList.add('visible'); }
+function closeLoadModal() { document.getElementById('loadModal').classList.remove('visible'); }
+function closeDetailModal() { document.getElementById('detailModal').classList.remove('visible'); }
+
+function uploadExcel() {
+    closeLoadModal();
+    document.getElementById('fileInput').click();
+}
+
+async function fetchFromGitHub() {
+    closeLoadModal();
+    showToast('GitHub에서 데이터를 불러오는 중...');
+    try {
+        const res = await fetch(GITHUB_RAW_URL);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const buf = await res.arrayBuffer();
+        const data = parseExcel(buf);
+        if (data) {
+            EMBEDDED_DATA = data;
+            loadData();
+            showToast('최신 데이터를 불러왔습니다!');
+        }
+    } catch (e) {
+        console.error(e);
+        showToast('GitHub에서 불러오기 실패: ' + e.message);
+    }
+}
+
+function handleFileUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    showToast('엑셀 파일을 분석하는 중...');
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+        try {
+            const data = parseExcel(evt.target.result);
+            if (data) {
+                EMBEDDED_DATA = data;
+                loadData();
+                showToast('데이터 로드 완료! (' + data.metadata.last_updated + ')');
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('엑셀 파싱 오류: ' + err.message);
+        }
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = '';
+}
+
+function parseExcel(arrayBuffer) {
+    const wb = XLSX.read(arrayBuffer, { type: 'array', cellFormula: false });
+    const wsDetail = wb.Sheets['상세 자산'];
+    const wsLoan = wb.Sheets['대출'];
+    if (!wsDetail) throw new Error('"상세 자산" 시트를 찾을 수 없습니다');
+
+    const detail = XLSX.utils.sheet_to_json(wsDetail, { header: 1, defval: null });
+    const loan = wsLoan ? XLSX.utils.sheet_to_json(wsLoan, { header: 1, defval: null }) : [];
+
+    const monthlyData = {};
+    const allDetails = [];
+    for (let i = 1; i < detail.length; i++) {
+        const row = detail[i];
+        if (!row[0]) continue;
+        const month = String(row[0]).trim();
+        const category = String(row[1] || '').trim();
+        const owner = String(row[2] || '').trim();
+        const name = String(row[3] || '').trim();
+        const amount = parseFloat(row[4]) || 0;
+        const ret = row[5];
+        const purpose = String(row[6] || '').trim();
+        const maturity = row[7] ? String(row[7]).trim() : '-';
+        const period = month.replace('2026년 ', '2026-').replace('3월','03').replace('4월','04').replace('5월','05').replace('6월','06').replace('7월','07').replace('8월','08').replace('9월','09').replace('10월','10').replace('11월','11').replace('12월','12');
+
+        if (!monthlyData[period]) monthlyData[period] = {};
+        if (!monthlyData[period][category]) monthlyData[period][category] = 0;
+        monthlyData[period][category] += amount;
+
+        allDetails.push({ month, period, category, owner, name, amount, return: ret, purpose, maturity, type: category });
+    }
+
+    Object.keys(monthlyData).forEach(p => { monthlyData[p]['부동산'] = 2200000000; });
+
+    let loanTotal = 349025014;
+    for (let i = 1; i < loan.length; i++) {
+        const row = loan[i];
+        if (row[0] === '총액' && row[2] && typeof row[2] === 'number') {
+            loanTotal = row[2]; break;
+        }
+    }
+
+    const periods = Object.keys(monthlyData).sort();
+    const latestPeriod = periods[periods.length - 1];
+    const latest = monthlyData[latestPeriod];
+
+    const cashTotal = (latest['예금'] || 0) + (latest['적금'] || 0);
+    const stocksTotal = latest['주식'] || 0;
+    const pensionTotal = latest['개인연금'] || 0;
+    const cryptoTotal = latest['가상화폐'] || 0;
+    const realEstateTotal = latest['부동산'] || 0;
+    const totalVal = cashTotal + stocksTotal + pensionTotal + cryptoTotal + realEstateTotal;
+    const netVal = totalVal - loanTotal;
+
+    const allocations = [
+        { cat: 'real_estate', label: '부동산', amount: realEstateTotal },
+        { cat: 'stocks', label: '주식', amount: stocksTotal },
+        { cat: 'pension', label: '개인연금', amount: pensionTotal },
+        { cat: 'cash', label: '현금/예금', amount: cashTotal },
+        { cat: 'crypto', label: '가상화폐', amount: cryptoTotal },
+    ];
+
+    const assetAllocation = allocations.map(a => ({
+        category: a.cat,
+        category_label: a.label,
+        amount_krw: Math.round(a.amount),
+        percentage: totalVal > 0 ? parseFloat(((a.amount / totalVal) * 100).toFixed(2)) : 0
+    })).filter(a => a.amount_krw > 0).sort((a, b) => b.amount_krw - a.amount_krw);
+
+    const historicalTrends = periods.map(period => {
+        const d = monthlyData[period];
+        const t = (d['예금']||0) + (d['적금']||0) + (d['주식']||0) + (d['개인연금']||0) + (d['가상화폐']||0) + (d['부동산']||0);
+        return {
+            period,
+            net_assets_krw: Math.round(t - loanTotal),
+            categories: {
+                cash: Math.round((d['예금']||0) + (d['적금']||0)),
+                stocks: Math.round(d['주식']||0),
+                pension: Math.round(d['개인연금']||0),
+                crypto: Math.round(d['가상화폐']||0),
+                real_estate: Math.round(d['부동산']||0)
+            }
+        };
+    });
+
+    // detail_breakdown
+    const detailMap = { real_estate: [{name:'아파트',amount:2200000000,owner:'공동',purpose:'주거',return:null,maturity:'-'}], stocks: [], pension: [], cash: [], crypto: [] };
+    const latestDetails = allDetails.filter(d => d.period === latestPeriod);
+    latestDetails.forEach(d => {
+        const item = { name: d.name, amount: Math.round(d.amount), owner: d.owner, purpose: d.purpose, return: d.return, maturity: d.maturity, type: d.type };
+        if (d.category === '주식') detailMap.stocks.push(item);
+        else if (d.category === '개인연금') detailMap.pension.push(item);
+        else if (d.category === '예금' || d.category === '적금') detailMap.cash.push(item);
+        else if (d.category === '가상화폐') detailMap.crypto.push(item);
+    });
+
+    return {
+        total_valuation_krw: Math.round(totalVal),
+        net_valuation_krw: Math.round(netVal),
+        total_debt_krw: Math.round(loanTotal),
+        currency: 'KRW',
+        asset_allocation: assetAllocation,
+        historical_trends: historicalTrends,
+        detail_breakdown: detailMap,
+        metadata: { source: '유주네 자산 현황.xlsx', last_updated: latestPeriod }
+    };
 }
 
 function formatWon(value) {
     return Math.round(value / 10000).toLocaleString('ko-KR') + '만원';
 }
-
 function formatWonChart(valueInMan) {
     return Math.round(valueInMan).toLocaleString('ko-KR') + '만원';
 }
-
-function computeNetMin(trends) {
-    const netValues = trends.map(t => t.net_assets_krw / 10000);
-    return Math.max(0, Math.floor(Math.min(...netValues) * 0.98));
+function formatNumber(v) {
+    return Math.round(v).toLocaleString('ko-KR');
 }
 
 function computeIndividualMin(trends) {
@@ -301,11 +571,55 @@ function computeIndividualMin(trends) {
     return Math.max(0, Math.floor(Math.min(...allValues) * 0.90));
 }
 
+function getMaturityDays(dateStr) {
+    if (!dateStr || dateStr === '-') return null;
+    const parts = dateStr.split('.');
+    if (parts.length < 3) return null;
+    const d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+    const diff = Math.ceil((d - TODAY) / (1000 * 60 * 60 * 24));
+    return diff;
+}
+
 function loadData() {
     renderDashboard(EMBEDDED_DATA);
 }
 
+let charts = [];
+function destroyCharts() {
+    charts.forEach(c => c.destroy());
+    charts = [];
+}
+
+function showDetail(category) {
+    const bd = EMBEDDED_DATA.detail_breakdown;
+    const items = bd[category] || [];
+    const catInfo = EMBEDDED_DATA.asset_allocation.find(a => a.category === category);
+    const catLabel = catInfo ? catInfo.category_label : category;
+    const total = items.reduce((s, i) => s + (i.amount || 0), 0);
+
+    let rows = '';
+    items.forEach(item => {
+        const ret = item.return !== null && item.return !== undefined ? (item.return * 100).toFixed(2) + '%' : '-';
+        const retColor = item.return > 0 ? 'color:var(--success)' : (item.return < 0 ? 'color:var(--danger)' : '');
+        rows += `<tr><td>${item.name}</td><td>${item.owner}</td><td>${formatWon(item.amount)}</td><td style="${retColor}">${ret}</td><td>${item.purpose}</td></tr>`;
+    });
+
+    document.getElementById('detailModalBox').innerHTML = `
+        <div class="detail-header">
+            <div class="detail-title">${catLabel} 상세 내역</div>
+            <button class="detail-x" onclick="closeDetailModal()">&times;</button>
+        </div>
+        <table class="detail-table">
+            <thead><tr><th>상품명</th><th>예금주</th><th>금액</th><th>수익률</th><th>목적</th></tr></thead>
+            <tbody>${rows}</tbody>
+        </table>
+        <div class="detail-total">합계: ${formatWon(total)}</div>
+    `;
+    document.getElementById('detailModal').classList.add('visible');
+}
+
 function renderDashboard(data) {
+    destroyCharts();
     const trends = data.historical_trends;
     const allocation = data.asset_allocation;
     const latest = trends[trends.length - 1];
@@ -313,8 +627,8 @@ function renderDashboard(data) {
     const momChange = prev ? latest.net_assets_krw - prev.net_assets_krw : 0;
     const momPct = prev ? ((momChange / prev.net_assets_krw) * 100).toFixed(2) : '0.00';
     const periods = trends.map(t => t.period.replace('2026-', ''));
+    const monthCount = periods.length;
 
-    // 각 자산별 변동률 계산
     const getChange = (cat) => {
         if (!prev) return { val: 0, pct: '0.00' };
         const cur = latest.categories[cat] || 0;
@@ -323,63 +637,107 @@ function renderDashboard(data) {
         const pct = pre ? ((diff / pre) * 100).toFixed(2) : '0.00';
         return { val: diff, pct };
     };
-
     const cashChange = getChange('cash');
     const stockChange = getChange('stocks');
     const pensionChange = getChange('pension');
     const cryptoChange = getChange('crypto');
 
+    // 목적별 집계 (detail_breakdown 기준)
+    const purposeMap = {};
+    Object.values(data.detail_breakdown || {}).forEach(list => {
+        list.forEach(item => {
+            const p = item.purpose || '기타';
+            if (!purposeMap[p]) purposeMap[p] = 0;
+            purposeMap[p] += item.amount || 0;
+        });
+    });
+    // 부동산도 추가
+    if (data.detail_breakdown && data.detail_breakdown.real_estate) {
+        data.detail_breakdown.real_estate.forEach(item => {
+            const p = item.purpose || '기타';
+            if (!purposeMap[p]) purposeMap[p] = 0;
+            purposeMap[p] += item.amount || 0;
+        });
+    }
+    const purposeList = Object.entries(purposeMap).map(([p, a]) => ({ purpose: p, amount: a })).sort((a, b) => b.amount - a.amount);
+
+    // 만기 알림 (cash 상세 내역 중 maturity가 있는 것)
+    const maturityItems = [];
+    if (data.detail_breakdown && data.detail_breakdown.cash) {
+        data.detail_breakdown.cash.forEach(item => {
+            const days = getMaturityDays(item.maturity);
+            if (days !== null) {
+                maturityItems.push({ ...item, days });
+            }
+        });
+    }
+    maturityItems.sort((a, b) => a.days - b.days);
+
     let html = `
         <div class="stats-grid">
-            <div class="stat-card primary">
+            <div class="stat-card primary" onclick="showDetail('real_estate')">
+                <button class="detail-btn">상세보기</button>
                 <div class="stat-label">순자산 (Net Assets)</div>
                 <div class="stat-value" style="color:var(--primary)">${formatWon(data.net_valuation_krw)}</div>
                 <div class="stat-change ${momChange >= 0 ? 'up' : 'down'}">
                     ${momChange >= 0 ? '&#9650;' : '&#9660;'} ${formatWon(Math.abs(momChange))} (${momPct}%)
                 </div>
             </div>
-            <div class="stat-card estate">
+            <div class="stat-card estate" onclick="showDetail('real_estate')">
+                <button class="detail-btn">상세보기</button>
                 <div class="stat-label">부동산</div>
                 <div class="stat-value" style="color:#795548">${formatWon(latest.categories.real_estate || 0)}</div>
             </div>
-            <div class="stat-card danger">
+            <div class="stat-card danger" onclick="showDetail('stocks')">
+                <button class="detail-btn">상세보기</button>
                 <div class="stat-label">주식</div>
                 <div class="stat-value" style="color:var(--danger)">${formatWon(latest.categories.stocks || 0)}</div>
                 <div class="stat-change ${stockChange.val >= 0 ? 'up' : 'down'}">
                     ${stockChange.val >= 0 ? '&#9650;' : '&#9660;'} ${stockChange.pct}%
                 </div>
             </div>
-            <div class="stat-card info">
+            <div class="stat-card info" onclick="showDetail('pension')">
+                <button class="detail-btn">상세보기</button>
                 <div class="stat-label">개인연금</div>
                 <div class="stat-value" style="color:var(--info)">${formatWon(latest.categories.pension || 0)}</div>
                 <div class="stat-change ${pensionChange.val >= 0 ? 'up' : 'down'}">
                     ${pensionChange.val >= 0 ? '&#9650;' : '&#9660;'} ${pensionChange.pct}%
                 </div>
             </div>
-            <div class="stat-card success">
+            <div class="stat-card success" onclick="showDetail('cash')">
+                <button class="detail-btn">상세보기</button>
                 <div class="stat-label">현금/예금</div>
                 <div class="stat-value" style="color:var(--success)">${formatWon(latest.categories.cash || 0)}</div>
                 <div class="stat-change ${cashChange.val >= 0 ? 'up' : 'down'}">
                     ${cashChange.val >= 0 ? '&#9650;' : '&#9660;'} ${cashChange.pct}%
                 </div>
             </div>
-            <div class="stat-card crypto">
+            <div class="stat-card crypto" onclick="showDetail('crypto')">
+                <button class="detail-btn">상세보기</button>
                 <div class="stat-label">가상화폐</div>
                 <div class="stat-value" style="color:#9c27b0">${formatWon(latest.categories.crypto || 0)}</div>
                 <div class="stat-change ${cryptoChange.val >= 0 ? 'up' : 'down'}">
                     ${cryptoChange.val >= 0 ? '&#9650;' : '&#9660;'} ${cryptoChange.pct}%
                 </div>
             </div>
-            <div class="stat-card warning">
+            <div class="stat-card warning" onclick="showDetail('real_estate')">
+                <button class="detail-btn">상세보기</button>
                 <div class="stat-label">부채</div>
                 <div class="stat-value" style="color:var(--warning)">${formatWon(data.total_debt_krw)}</div>
             </div>
         </div>
 
         <div class="chart-section">
-            <div class="chart-title">자산 추이 (Stacked Area)</div>
+            <div class="chart-title">자산 비중 추이 (%) &mdash; ${monthCount}개월</div>
             <div class="chart-container">
-                <canvas id="trendChart"></canvas>
+                <canvas id="pctTrendChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-section">
+            <div class="chart-title">순자산 추이</div>
+            <div class="chart-container trend">
+                <canvas id="netTrendChart"></canvas>
             </div>
         </div>
 
@@ -392,7 +750,7 @@ function renderDashboard(data) {
 
         <div class="chart-section">
             <div class="chart-title">부동산 추이</div>
-            <div class="chart-container trend">
+            <div class="chart-container xsmall">
                 <canvas id="realEstateChart"></canvas>
             </div>
         </div>
@@ -417,87 +775,68 @@ function renderDashboard(data) {
         </div>
 
         <div class="chart-section">
-            <div class="chart-title">&#128161; 추가 대시보드 제안</div>
-            <div class="suggestion-list">
-                <div class="suggestion-item">
-                    <div class="suggestion-title">&#127968; 포트폴리오 리밸런싱 필요</div>
-                    <div class="suggestion-desc">부동산 비중이 79.72%로 과도하게 높습니다. 주식(7.07%)과 현금(6.44%) 비중을 늘려 분산 투자를 고려해보세요.</div>
-                    <span class="suggestion-badge">위험도: 중간</span>
-                </div>
-                <div class="suggestion-item">
-                    <div class="suggestion-title">&#128200; 가장 변동성 큰 자산: 가상화폐</div>
-                    <div class="suggestion-desc">가상화폐는 최근 3개월간 -14.55% 손실을 기록 중입니다. 변동성 관리가 필요합니다.</div>
-                    <span class="suggestion-badge">주의 필요</span>
-                </div>
-                <div class="suggestion-item">
-                    <div class="suggestion-title">&#128176; 부채 상환 진행률 추적</div>
-                    <div class="suggestion-desc">현재 부채 7.48억원에 대한 상환 계획과 진행률을 대시보드에 추가하면 동기부여가 될 것 같습니다.</div>
-                    <span class="suggestion-badge">추천 기능</span>
-                </div>
-                <div class="suggestion-item">
-                    <div class="suggestion-title">&#127941; 목적별 자산 현황 추가</div>
-                    <div class="suggestion-desc">엑셀에 "목적별 현황" 시트가 있습니다. 주택/차/노후/여행 등 목적별로 자산을 분류해서 보여주는 차트를 추가해보세요.</div>
-                    <span class="suggestion-badge">데이터 활용</span>
-                </div>
-                <div class="suggestion-item">
-                    <div class="suggestion-title">&#128178; 예금/적금 만기 알림</div>
-                    <div class="suggestion-desc">상세 자산에 만기일이 기록되어 있습니다. 곧 만기가 다가오는 예적금(2026.10.13, 2026.12.29 등)을 알림으로 표시하면 유용합니다.</div>
-                    <span class="suggestion-badge">실용적</span>
-                </div>
+            <div class="chart-title">&#127941; 목적별 자산 현황</div>
+            <div class="chart-container small">
+                <canvas id="purposeChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-section">
+            <div class="chart-title">&#9200; 예적금 만기 알림</div>
+            <div class="maturity-list">
+                ${maturityItems.length === 0 ? '<p style="color:var(--text-secondary);font-size:13px;padding:10px">만기일이 설정된 예적금이 없습니다.</p>' : maturityItems.map(item => {
+                    const days = item.days;
+                    let badgeClass = 'success';
+                    let badgeText = 'D-' + days;
+                    if (days < 0) { badgeClass = 'danger'; badgeText = 'D+' + Math.abs(days) + ' (만기지남)'; }
+                    else if (days <= 30) { badgeClass = 'danger'; badgeText = 'D-' + days; }
+                    else if (days <= 90) { badgeClass = 'warning'; badgeText = 'D-' + days; }
+                    return `
+                        <div class="maturity-item">
+                            <div class="maturity-badge ${badgeClass}">${badgeText}</div>
+                            <div class="maturity-info">
+                                <div class="maturity-name">[${item.type}] ${item.name} &middot; ${item.owner}</div>
+                                <div class="maturity-sub">목적: ${item.purpose} &middot; 만기: ${item.maturity}</div>
+                            </div>
+                            <div class="maturity-amount">${formatWon(item.amount)}</div>
+                        </div>
+                    `;
+                }).join('')}
             </div>
         </div>
     `;
 
     document.getElementById('contentArea').innerHTML = html;
 
-    // Stacked Area Chart
     const dRealEstate = trends.map(t => (t.categories.real_estate || 0) / 10000);
-    const dStocks     = trends.map(t => (t.categories.stocks     || 0) / 10000);
-    const dPension    = trends.map(t => (t.categories.pension    || 0) / 10000);
-    const dCash       = trends.map(t => (t.categories.cash       || 0) / 10000);
-    const dCrypto     = trends.map(t => (t.categories.crypto     || 0) / 10000);
+    const dStocks = trends.map(t => (t.categories.stocks || 0) / 10000);
+    const dPension = trends.map(t => (t.categories.pension || 0) / 10000);
+    const dCash = trends.map(t => (t.categories.cash || 0) / 10000);
+    const dCrypto = trends.map(t => (t.categories.crypto || 0) / 10000);
 
-    const ctxTrend = document.getElementById('trendChart').getContext('2d');
-    new Chart(ctxTrend, {
+    // 100% Stacked Area
+    const pctData = trends.map(t => {
+        const total = (t.categories.real_estate||0)+(t.categories.stocks||0)+(t.categories.pension||0)+(t.categories.cash||0)+(t.categories.crypto||0);
+        return {
+            re: total > 0 ? ((t.categories.real_estate||0)/total)*100 : 0,
+            st: total > 0 ? ((t.categories.stocks||0)/total)*100 : 0,
+            pe: total > 0 ? ((t.categories.pension||0)/total)*100 : 0,
+            ca: total > 0 ? ((t.categories.cash||0)/total)*100 : 0,
+            cr: total > 0 ? ((t.categories.crypto||0)/total)*100 : 0,
+        };
+    });
+
+    const ctxPct = document.getElementById('pctTrendChart').getContext('2d');
+    charts.push(new Chart(ctxPct, {
         type: 'line',
         data: {
             labels: periods,
             datasets: [
-                {
-                    label: '부동산',
-                    data: dRealEstate,
-                    borderColor: COLORS.real_estate,
-                    backgroundColor: COLORS.real_estate + 'A0',
-                    fill: true, tension: 0.3, pointRadius: 3
-                },
-                {
-                    label: '주식',
-                    data: dStocks,
-                    borderColor: COLORS.domestic_stock,
-                    backgroundColor: COLORS.domestic_stock + 'A0',
-                    fill: true, tension: 0.3, pointRadius: 3
-                },
-                {
-                    label: '개인연금',
-                    data: dPension,
-                    borderColor: COLORS.pension,
-                    backgroundColor: COLORS.pension + 'A0',
-                    fill: true, tension: 0.3, pointRadius: 3
-                },
-                {
-                    label: '현금/예금',
-                    data: dCash,
-                    borderColor: COLORS.cash,
-                    backgroundColor: COLORS.cash + 'A0',
-                    fill: true, tension: 0.3, pointRadius: 3
-                },
-                {
-                    label: '가상화폐',
-                    data: dCrypto,
-                    borderColor: COLORS.crypto,
-                    backgroundColor: COLORS.crypto + 'A0',
-                    fill: true, tension: 0.3, pointRadius: 3
-                },
+                { label: '부동산', data: pctData.map(d => d.re), borderColor: COLORS.real_estate, backgroundColor: COLORS.real_estate + 'CC', fill: true, tension: 0.3, pointRadius: 3 },
+                { label: '주식', data: pctData.map(d => d.st), borderColor: COLORS.domestic_stock, backgroundColor: COLORS.domestic_stock + 'CC', fill: true, tension: 0.3, pointRadius: 3 },
+                { label: '개인연금', data: pctData.map(d => d.pe), borderColor: COLORS.pension, backgroundColor: COLORS.pension + 'CC', fill: true, tension: 0.3, pointRadius: 3 },
+                { label: '현금/예금', data: pctData.map(d => d.ca), borderColor: COLORS.cash, backgroundColor: COLORS.cash + 'CC', fill: true, tension: 0.3, pointRadius: 3 },
+                { label: '가상화폐', data: pctData.map(d => d.cr), borderColor: COLORS.crypto, backgroundColor: COLORS.crypto + 'CC', fill: true, tension: 0.3, pointRadius: 3 },
             ]
         },
         options: {
@@ -507,94 +846,92 @@ function renderDashboard(data) {
                 legend: { position: 'top', labels: { usePointStyle: true, padding: 16 } },
                 tooltip: {
                     callbacks: {
-                        label: (ctx) => {
-                            return ctx.dataset.label + ': ' + formatWonChart(ctx.raw);
-                        },
-                        footer: (tooltipItems) => {
-                            let total = 0;
-                            tooltipItems.forEach(item => total += item.raw);
-                            return '총 자산: ' + formatWonChart(total);
-                        }
+                        label: (ctx) => `${ctx.dataset.label}: ${ctx.raw.toFixed(2)}%`
                     }
                 }
             },
             scales: {
                 x: { grid: { display: false } },
                 y: {
-                    stacked: true,
-                    ticks: { callback: v => formatWonChart(v) },
+                    stacked: true, max: 100,
+                    ticks: { callback: v => v + '%' },
                     grid: { color: '#f0f0f0' }
                 }
             }
         }
-    });
+    }));
 
-    // Individual Asset Trends (부동산 제외)
-    const ctxInd = document.getElementById('individualChart').getContext('2d');
-    new Chart(ctxInd, {
+    // 순자산 추이 Line
+    const ctxNet = document.getElementById('netTrendChart').getContext('2d');
+    charts.push(new Chart(ctxNet, {
         type: 'line',
         data: {
             labels: periods,
-            datasets: [
-                {
-                    label: '주식',
-                    data: trends.map(t => (t.categories.stocks || 0) / 10000),
-                    borderColor: COLORS.domestic_stock, backgroundColor: 'transparent',
-                    fill: false, tension: 0.3, pointRadius: 4, borderWidth: 2
-                },
-                {
-                    label: '개인연금',
-                    data: trends.map(t => (t.categories.pension || 0) / 10000),
-                    borderColor: COLORS.pension, backgroundColor: 'transparent',
-                    fill: false, tension: 0.3, pointRadius: 4, borderWidth: 2
-                },
-                {
-                    label: '현금/예금',
-                    data: trends.map(t => (t.categories.cash || 0) / 10000),
-                    borderColor: COLORS.cash, backgroundColor: 'transparent',
-                    fill: false, tension: 0.3, pointRadius: 4, borderWidth: 2
-                },
-                {
-                    label: '가상화폐',
-                    data: trends.map(t => (t.categories.crypto || 0) / 10000),
-                    borderColor: COLORS.crypto, backgroundColor: 'transparent',
-                    fill: false, tension: 0.3, pointRadius: 4, borderWidth: 2
-                },
-            ]
+            datasets: [{
+                label: '순자산',
+                data: trends.map(t => t.net_assets_krw / 10000),
+                borderColor: '#6650a4',
+                backgroundColor: 'rgba(102,80,164,0.1)',
+                fill: true, tension: 0.3, pointRadius: 4, borderWidth: 2
+            }]
         },
         options: {
             responsive: true, maintainAspectRatio: false,
-            interaction: { mode: 'index', intersect: false },
             plugins: {
-                legend: { position: 'top', labels: { usePointStyle: true, padding: 16 } },
-                tooltip: {
-                    callbacks: {
-                        label: (ctx) => ctx.dataset.label + ': ' + formatWonChart(ctx.raw)
-                    }
-                },
+                legend: { display: false },
+                tooltip: { callbacks: { label: ctx => '순자산: ' + formatWonChart(ctx.raw) } },
                 datalabels: {
                     display: 'auto', align: 'top', anchor: 'end', offset: 3,
                     color: '#333', font: { size: 10, weight: '600' },
                     formatter: (value) => formatWonChart(value),
-                    backgroundColor: 'rgba(255,255,255,0.75)',
-                    borderRadius: 4, padding: { top: 1, bottom: 1, left: 3, right: 3 },
-                    clip: false
+                    backgroundColor: 'rgba(255,255,255,0.75)', borderRadius: 4,
+                    padding: { top: 1, bottom: 1, left: 3, right: 3 }, clip: false
+                }
+            },
+            scales: {
+                y: { ticks: { callback: v => formatWonChart(v) }, grid: { color: '#f0f0f0' } },
+                x: { grid: { display: false } }
+            }
+        }
+    }));
+
+    // Individual Asset Trends (부동산 제외)
+    const ctxInd = document.getElementById('individualChart').getContext('2d');
+    charts.push(new Chart(ctxInd, {
+        type: 'line',
+        data: {
+            labels: periods,
+            datasets: [
+                { label: '주식', data: trends.map(t => (t.categories.stocks || 0) / 10000), borderColor: COLORS.domestic_stock, backgroundColor: 'transparent', fill: false, tension: 0.3, pointRadius: 4, borderWidth: 2 },
+                { label: '개인연금', data: trends.map(t => (t.categories.pension || 0) / 10000), borderColor: COLORS.pension, backgroundColor: 'transparent', fill: false, tension: 0.3, pointRadius: 4, borderWidth: 2 },
+                { label: '현금/예금', data: trends.map(t => (t.categories.cash || 0) / 10000), borderColor: COLORS.cash, backgroundColor: 'transparent', fill: false, tension: 0.3, pointRadius: 4, borderWidth: 2 },
+                { label: '가상화폐', data: trends.map(t => (t.categories.crypto || 0) / 10000), borderColor: COLORS.crypto, backgroundColor: 'transparent', fill: false, tension: 0.3, pointRadius: 4, borderWidth: 2 },
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { position: 'top', labels: { usePointStyle: true, padding: 16 } },
+                tooltip: { callbacks: { label: (ctx) => ctx.dataset.label + ': ' + formatWonChart(ctx.raw) } },
+                datalabels: {
+                    display: 'auto', align: 'top', anchor: 'end', offset: 3,
+                    color: '#333', font: { size: 10, weight: '600' },
+                    formatter: (value) => formatWonChart(value),
+                    backgroundColor: 'rgba(255,255,255,0.75)', borderRadius: 4,
+                    padding: { top: 1, bottom: 1, left: 3, right: 3 }, clip: false
                 }
             },
             scales: {
                 x: { grid: { display: false } },
-                y: {
-                    min: computeIndividualMin(trends),
-                    ticks: { callback: v => formatWonChart(v) },
-                    grid: { color: '#f0f0f0' }
-                }
+                y: { min: computeIndividualMin(trends), ticks: { callback: v => formatWonChart(v) }, grid: { color: '#f0f0f0' } }
             }
         }
-    });
+    }));
 
-    // Real Estate Chart
+    // 부동산 추이
     const ctxRE = document.getElementById('realEstateChart').getContext('2d');
-    new Chart(ctxRE, {
+    charts.push(new Chart(ctxRE, {
         type: 'line',
         data: {
             labels: periods,
@@ -615,9 +952,8 @@ function renderDashboard(data) {
                     display: 'auto', align: 'top', anchor: 'end', offset: 3,
                     color: '#333', font: { size: 10, weight: '600' },
                     formatter: (value) => formatWonChart(value),
-                    backgroundColor: 'rgba(255,255,255,0.75)',
-                    borderRadius: 4, padding: { top: 1, bottom: 1, left: 3, right: 3 },
-                    clip: false
+                    backgroundColor: 'rgba(255,255,255,0.75)', borderRadius: 4,
+                    padding: { top: 1, bottom: 1, left: 3, right: 3 }, clip: false
                 }
             },
             scales: {
@@ -625,11 +961,11 @@ function renderDashboard(data) {
                 x: { grid: { display: false } }
             }
         }
-    });
+    }));
 
-    // Allocation Doughnut with datalabels
+    // Allocation Doughnut
     const ctxAlloc = document.getElementById('allocChart').getContext('2d');
-    new Chart(ctxAlloc, {
+    charts.push(new Chart(ctxAlloc, {
         type: 'doughnut',
         data: {
             labels: allocation.map(a => a.category_label),
@@ -653,21 +989,53 @@ function renderDashboard(data) {
                     }
                 },
                 datalabels: {
-                    display: true,
-                    color: '#fff',
-                    font: { size: 11, weight: '700' },
+                    display: true, color: '#fff', font: { size: 11, weight: '700' },
                     formatter: (value, ctx) => {
                         const label = ctx.chart.data.labels[ctx.dataIndex];
                         const pct = allocation[ctx.dataIndex].percentage;
                         return `${label}\n${pct}%`;
                     },
                     textAlign: 'center',
-                    textShadowColor: 'rgba(0,0,0,0.3)',
-                    textShadowBlur: 4
+                    textShadowColor: 'rgba(0,0,0,0.3)', textShadowBlur: 4
                 }
             }
         }
-    });
+    }));
+
+    // Purpose Horizontal Bar
+    const ctxPurpose = document.getElementById('purposeChart').getContext('2d');
+    charts.push(new Chart(ctxPurpose, {
+        type: 'bar',
+        data: {
+            labels: purposeList.map(p => p.purpose),
+            datasets: [{
+                label: '금액',
+                data: purposeList.map(p => p.amount / 10000),
+                backgroundColor: purposeList.map((_, i) => {
+                    const colors = ['#6650a4','#ef5350','#2196f3','#4caf50','#ff9800','#9c27b0','#795548','#00bcd4'];
+                    return colors[i % colors.length] + 'CC';
+                }),
+                borderRadius: 8
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: ctx => formatWonChart(ctx.raw) } },
+                datalabels: {
+                    display: true, anchor: 'end', align: 'right', offset: 4,
+                    color: '#333', font: { size: 11, weight: '600' },
+                    formatter: (value) => formatWonChart(value)
+                }
+            },
+            scales: {
+                x: { ticks: { callback: v => formatWonChart(v) }, grid: { color: '#f0f0f0' } },
+                y: { grid: { display: false } }
+            }
+        }
+    }));
 }
 </script>
 </body>
