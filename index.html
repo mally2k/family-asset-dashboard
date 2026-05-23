@@ -301,7 +301,14 @@ let EMBEDDED_DATA = {
     {"period": "2026-05", "net_assets_krw": 2410607805, "categories": {"cash": 177633670, "stocks": 195123665, "pension": 181925150, "crypto": 4950334, "real_estate": 2200000000}}
   ],
   "detail_breakdown": {
-    "real_estate": [{"name": "아파트", "amount": 2200000000, "owner": "공동", "purpose": "주거", "return": null, "maturity": "-"}],
+    "real_estate": [{"name": "아파트", "amount": 2200000000, "owner": "공동", "purpose": "부동산", "return": null, "maturity": "-"}],
+    "debt": [
+      {"name": "새마을금고", "amount": 21640000, "owner": "종현", "purpose": "대출", "return": null, "maturity": "-"},
+      {"name": "새마을금고", "amount": 100000000, "owner": "종현", "purpose": "대출", "return": null, "maturity": "-"},
+      {"name": "새마을금고", "amount": 50000000, "owner": "종현", "purpose": "대출", "return": null, "maturity": "-"},
+      {"name": "우리은행", "amount": 65385014, "owner": "종현", "purpose": "대출", "return": null, "maturity": "-"},
+      {"name": "새마을금고", "amount": 112000000, "owner": "유나", "purpose": "대출", "return": null, "maturity": "-"}
+    ],
     "stocks": [
       {"name": "SPY", "amount": 28945596, "owner": "유나", "purpose": "노후", "return": 0.384, "maturity": "-"},
       {"name": "SCHD", "amount": 8939871, "owner": "유나", "purpose": "노후", "return": 0.1396, "maturity": "-"},
@@ -528,7 +535,7 @@ function parseExcel(arrayBuffer) {
     });
 
     // detail_breakdown
-    const detailMap = { real_estate: [{name:'아파트',amount:2200000000,owner:'공동',purpose:'주거',return:null,maturity:'-'}], stocks: [], pension: [], cash: [], crypto: [] };
+    const detailMap = { real_estate: [{name:'아파트',amount:2200000000,owner:'공동',purpose:'부동산',return:null,maturity:'-'}], debt: [], stocks: [], pension: [], cash: [], crypto: [] };
     const latestDetails = allDetails.filter(d => d.period === latestPeriod);
     latestDetails.forEach(d => {
         const item = { name: d.name, amount: Math.round(d.amount), owner: d.owner, purpose: d.purpose, return: d.return, maturity: d.maturity, type: d.type };
@@ -675,8 +682,7 @@ function renderDashboard(data) {
 
     let html = `
         <div class="stats-grid">
-            <div class="stat-card primary" onclick="showDetail('real_estate')">
-                <button class="detail-btn">상세보기</button>
+            <div class="stat-card primary">
                 <div class="stat-label">순자산 (Net Assets)</div>
                 <div class="stat-value" style="color:var(--primary)">${formatWon(data.net_valuation_krw)}</div>
                 <div class="stat-change ${momChange >= 0 ? 'up' : 'down'}">
@@ -720,17 +726,10 @@ function renderDashboard(data) {
                     ${cryptoChange.val >= 0 ? '&#9650;' : '&#9660;'} ${cryptoChange.pct}%
                 </div>
             </div>
-            <div class="stat-card warning" onclick="showDetail('real_estate')">
+            <div class="stat-card warning" onclick="showDetail('debt')">
                 <button class="detail-btn">상세보기</button>
                 <div class="stat-label">부채</div>
                 <div class="stat-value" style="color:var(--warning)">${formatWon(data.total_debt_krw)}</div>
-            </div>
-        </div>
-
-        <div class="chart-section">
-            <div class="chart-title">자산 비중 추이 (%) &mdash; ${monthCount}개월</div>
-            <div class="chart-container">
-                <canvas id="pctTrendChart"></canvas>
             </div>
         </div>
 
@@ -814,54 +813,14 @@ function renderDashboard(data) {
     const dCash = trends.map(t => (t.categories.cash || 0) / 10000);
     const dCrypto = trends.map(t => (t.categories.crypto || 0) / 10000);
 
-    // 100% Stacked Area
-    const pctData = trends.map(t => {
-        const total = (t.categories.real_estate||0)+(t.categories.stocks||0)+(t.categories.pension||0)+(t.categories.cash||0)+(t.categories.crypto||0);
-        return {
-            re: total > 0 ? ((t.categories.real_estate||0)/total)*100 : 0,
-            st: total > 0 ? ((t.categories.stocks||0)/total)*100 : 0,
-            pe: total > 0 ? ((t.categories.pension||0)/total)*100 : 0,
-            ca: total > 0 ? ((t.categories.cash||0)/total)*100 : 0,
-            cr: total > 0 ? ((t.categories.crypto||0)/total)*100 : 0,
-        };
-    });
-
-    const ctxPct = document.getElementById('pctTrendChart').getContext('2d');
-    charts.push(new Chart(ctxPct, {
-        type: 'line',
-        data: {
-            labels: periods,
-            datasets: [
-                { label: '부동산', data: pctData.map(d => d.re), borderColor: COLORS.real_estate, backgroundColor: COLORS.real_estate + 'CC', fill: true, tension: 0.3, pointRadius: 3 },
-                { label: '주식', data: pctData.map(d => d.st), borderColor: COLORS.domestic_stock, backgroundColor: COLORS.domestic_stock + 'CC', fill: true, tension: 0.3, pointRadius: 3 },
-                { label: '개인연금', data: pctData.map(d => d.pe), borderColor: COLORS.pension, backgroundColor: COLORS.pension + 'CC', fill: true, tension: 0.3, pointRadius: 3 },
-                { label: '현금/예금', data: pctData.map(d => d.ca), borderColor: COLORS.cash, backgroundColor: COLORS.cash + 'CC', fill: true, tension: 0.3, pointRadius: 3 },
-                { label: '가상화폐', data: pctData.map(d => d.cr), borderColor: COLORS.crypto, backgroundColor: COLORS.crypto + 'CC', fill: true, tension: 0.3, pointRadius: 3 },
-            ]
-        },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            interaction: { mode: 'index', intersect: false },
-            plugins: {
-                legend: { position: 'top', labels: { usePointStyle: true, padding: 16 } },
-                tooltip: {
-                    callbacks: {
-                        label: (ctx) => `${ctx.dataset.label}: ${ctx.raw.toFixed(2)}%`
-                    }
-                }
-            },
-            scales: {
-                x: { grid: { display: false } },
-                y: {
-                    stacked: true, max: 100,
-                    ticks: { callback: v => v + '%' },
-                    grid: { color: '#f0f0f0' }
-                }
-            }
-        }
-    }));
-
     // 순자산 추이 Line
+    const netChanges = trends.map((t, i) => {
+        if (i === 0) return '+0.00%';
+        const p = trends[i-1].net_assets_krw;
+        const c = t.net_assets_krw;
+        const pct = ((c - p) / p * 100).toFixed(2);
+        return (pct >= 0 ? '+' : '') + pct + '%';
+    });
     const ctxNet = document.getElementById('netTrendChart').getContext('2d');
     charts.push(new Chart(ctxNet, {
         type: 'line',
@@ -881,11 +840,11 @@ function renderDashboard(data) {
                 legend: { display: false },
                 tooltip: { callbacks: { label: ctx => '순자산: ' + formatWonChart(ctx.raw) } },
                 datalabels: {
-                    display: 'auto', align: 'top', anchor: 'end', offset: 3,
+                    display: true, align: 'top', anchor: 'end', offset: 4,
                     color: '#333', font: { size: 10, weight: '600' },
-                    formatter: (value) => formatWonChart(value),
-                    backgroundColor: 'rgba(255,255,255,0.75)', borderRadius: 4,
-                    padding: { top: 1, bottom: 1, left: 3, right: 3 }, clip: false
+                    formatter: (value, ctx) => formatWonChart(value) + '\n(' + netChanges[ctx.dataIndex] + ')',
+                    backgroundColor: 'rgba(255,255,255,0.8)', borderRadius: 4,
+                    padding: { top: 2, bottom: 2, left: 4, right: 4 }, clip: false
                 }
             },
             scales: {
