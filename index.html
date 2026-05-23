@@ -5,277 +5,517 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#6650a4">
     <title>유주네 자산 현황</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard/dist/web/static/pretendard.css" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
+            --bg: #f0f2f5;
+            --surface: #ffffff;
+            --surface-hover: #f8f9fa;
+            --text: #1a1a2e;
+            --text-secondary: #6b7280;
             --primary: #6650a4;
-            --primary-light: #eaddff;
-            --primary-dark: #4a3880;
-            --success: #4caf50;
-            --danger: #ef5350;
-            --warning: #ff9800;
-            --info: #2196f3;
-            --bg: #fffbfe;
-            --surface: #f3edf7;
-            --text: #1d1b20;
-            --text-secondary: #49454f;
-            --card-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            --primary-light: #e8e0f7;
+            --primary-rgb: 102, 80, 164;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+            --estate: #8d6e63;
+            --crypto: #9333ea;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+            --shadow: 0 4px 20px rgba(0,0,0,0.06);
+            --shadow-lg: 0 10px 40px rgba(0,0,0,0.1);
+            --radius-sm: 12px;
             --radius: 20px;
+            --radius-lg: 28px;
+        }
+        .dark {
+            --bg: #0a0a0f;
+            --surface: #14141f;
+            --surface-hover: #1e1e2d;
+            --text: #f0f0f5;
+            --text-secondary: #9ca3af;
+            --primary: #a78bfa;
+            --primary-light: rgba(167,139,250,0.15);
+            --primary-rgb: 167, 139, 250;
+            --success: #34d399;
+            --danger: #f87171;
+            --warning: #fbbf24;
+            --info: #60a5fa;
+            --estate: #bcaaa4;
+            --crypto: #c084fc;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+            --shadow: 0 4px 20px rgba(0,0,0,0.3);
+            --shadow-lg: 0 10px 40px rgba(0,0,0,0.5);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html { scroll-behavior: smooth; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
             background: var(--bg);
             color: var(--text);
             min-height: 100vh;
             overflow-x: hidden;
+            transition: background 0.3s, color 0.3s;
         }
-        #passwordScreen {
-            position: fixed; inset: 0; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+
+        /* ── PIN Screen (Glassmorphism) ── */
+        #pinScreen {
+            position: fixed; inset: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 1000; transition: opacity 0.5s, transform 0.5s;
+            z-index: 1000; transition: opacity 0.6s, transform 0.6s;
         }
-        #passwordScreen.hidden {
+        #pinScreen.hidden {
             opacity: 0; pointer-events: none; transform: scale(1.05);
         }
-        .lock-icon { font-size: 64px; margin-bottom: 20px; }
-        .lock-title { color: white; font-size: 24px; font-weight: 700; margin-bottom: 8px; }
-        .lock-subtitle { color: rgba(255,255,255,0.7); font-size: 14px; margin-bottom: 32px; }
-        .pin-inputs { display: flex; gap: 12px; margin-bottom: 24px; }
-        .pin-inputs input {
-            width: 48px; height: 56px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.3);
-            background: rgba(255,255,255,0.1); color: white; font-size: 24px; font-weight: 700;
-            text-align: center; caret-color: white; outline: none; transition: all 0.2s;
+        .glass-card {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255,255,255,0.25);
+            border-radius: var(--radius-lg);
+            padding: 48px 36px;
+            width: 90%; max-width: 360px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            text-align: center;
         }
-        .pin-inputs input:focus { border-color: white; background: rgba(255,255,255,0.2); }
-        .pin-error { color: #ff9e9e; font-size: 13px; height: 20px; margin-bottom: 8px; }
-        .unlock-btn {
-            background: white; color: var(--primary); border: none; border-radius: 28px;
-            padding: 14px 48px; font-size: 16px; font-weight: 700; cursor: pointer;
-            transition: transform 0.15s, box-shadow 0.2s;
+        .glass-card .lock-icon {
+            font-size: 56px; margin-bottom: 16px;
+            background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
-        .unlock-btn:active { transform: scale(0.96); }
-        .app { max-width: 900px; margin: 0 auto; padding: 16px; padding-bottom: 40px; display: none; }
-        .app.visible { display: block; animation: fadeIn 0.5s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .top-bar {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 20px; flex-wrap: wrap; gap: 10px;
+        .glass-card h2 {
+            color: #fff; font-size: 22px; font-weight: 700; margin-bottom: 6px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .top-bar h1 { font-size: 22px; font-weight: 700; color: var(--primary); }
-        .top-actions { display: flex; gap: 8px; }
-        .top-btn {
-            background: var(--primary-light); color: var(--primary); border: none;
-            border-radius: 24px; padding: 10px 18px; font-size: 13px; font-weight: 600;
-            cursor: pointer; display: flex; align-items: center; gap: 6px;
-            transition: all 0.2s;
+        .glass-card p {
+            color: rgba(255,255,255,0.75); font-size: 14px; margin-bottom: 32px;
         }
-        .top-btn:active { transform: scale(0.95); }
-        .top-btn.copied { background: var(--success); color: white; }
-        .stats-grid {
-            display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px;
+        .pin-dots {
+            display: flex; gap: 14px; justify-content: center; margin-bottom: 28px;
         }
-        .stat-card {
-            background: #fff; border-radius: var(--radius); padding: 18px;
-            box-shadow: var(--card-shadow); position: relative; overflow: hidden;
-            cursor: pointer; transition: transform 0.15s;
+        .pin-dots input {
+            width: 48px; height: 56px; border-radius: 14px;
+            border: 2px solid rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.12);
+            color: #fff; font-size: 24px; font-weight: 700;
+            text-align: center; caret-color: #fff; outline: none;
+            transition: all 0.2s; backdrop-filter: blur(4px);
         }
-        .stat-card:active { transform: scale(0.98); }
-        .stat-card::before {
+        .pin-dots input:focus {
+            border-color: rgba(255,255,255,0.8);
+            background: rgba(255,255,255,0.25);
+            box-shadow: 0 0 0 4px rgba(255,255,255,0.15);
+        }
+        .pin-dots input.filled { background: rgba(255,255,255,0.35); border-color: rgba(255,255,255,0.6); }
+        .pin-error {
+            color: #ffcdd2; font-size: 13px; height: 20px; margin-bottom: 12px;
+            font-weight: 500;
+        }
+        .glass-btn {
+            width: 100%; padding: 14px; border-radius: 14px;
+            background: #fff; color: #764ba2; border: none;
+            font-size: 15px; font-weight: 700; cursor: pointer;
+            transition: all 0.2s; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .glass-btn:active { transform: scale(0.97); }
+
+        /* ── App ── */
+        #app { display: none; padding-bottom: 100px; }
+        #app.visible { display: block; animation: fadeUp 0.5s ease; }
+        @keyframes fadeUp { from { opacity:0; transform:translateY(30px);} to { opacity:1; transform:translateY(0);} }
+        @keyframes fadeIn { from { opacity:0;} to { opacity:1;} }
+
+        /* ── Header ── */
+        .header {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(var(--bg), 0.85);
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(var(--primary-rgb), 0.08);
+            transition: background 0.3s;
+        }
+        .header-inner {
+            max-width: 900px; margin: 0 auto;
+            padding: 14px 20px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .header-title { font-size: 18px; font-weight: 700; color: var(--primary); display:flex; align-items:center; gap:8px; }
+        .header-actions { display: flex; gap: 8px; align-items: center; }
+        .icon-btn {
+            width: 40px; height: 40px; border-radius: 12px;
+            border: none; background: var(--surface);
+            color: var(--text-secondary); cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: var(--shadow-sm); transition: all 0.2s;
+        }
+        .icon-btn:hover { background: var(--surface-hover); color: var(--primary); }
+        .icon-btn:active { transform: scale(0.92); }
+
+        /* ── Hero ── */
+        .hero {
+            max-width: 900px; margin: 0 auto; padding: 32px 20px 20px;
+        }
+        .hero-label {
+            font-size: 13px; color: var(--text-secondary); font-weight: 600;
+            margin-bottom: 8px; letter-spacing: 0.5px;
+        }
+        .hero-value {
+            font-size: 42px; font-weight: 800; letter-spacing: -1.5px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--crypto) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            line-height: 1.2; margin-bottom: 10px;
+        }
+        .hero-change {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 15px; font-weight: 700; padding: 6px 14px;
+            border-radius: 100px;
+        }
+        .hero-change.up { color: var(--success); background: rgba(16,185,129,0.1); }
+        .hero-change.down { color: var(--danger); background: rgba(239,68,68,0.1); }
+
+        /* ── Quick Stats ── */
+        .stats {
+            max-width: 900px; margin: 0 auto; padding: 0 20px 24px;
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+        }
+        .stat-tile {
+            background: var(--surface); border-radius: var(--radius);
+            padding: 20px; box-shadow: var(--shadow);
+            transition: transform 0.2s, box-shadow 0.2s; cursor: pointer;
+            position: relative; overflow: hidden;
+        }
+        .stat-tile:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+        .stat-tile:active { transform: scale(0.98); }
+        .stat-tile::before {
             content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
         }
-        .stat-card.primary::before { background: var(--primary); }
-        .stat-card.success::before { background: var(--success); }
-        .stat-card.danger::before { background: var(--danger); }
-        .stat-card.info::before { background: var(--info); }
-        .stat-card.warning::before { background: var(--warning); }
-        .stat-card.crypto::before { background: #9c27b0; }
-        .stat-card.estate::before { background: #795548; }
-        .stat-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; }
-        .stat-value { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
-        .stat-change {
-            font-size: 12px; margin-top: 6px; font-weight: 600; display: inline-flex;
-            align-items: center; gap: 4px; padding: 2px 8px; border-radius: 10px;
+        .stat-tile.estate::before { background: var(--estate); }
+        .stat-tile.stock::before { background: var(--danger); }
+        .stat-tile.pension::before { background: var(--info); }
+        .stat-tile.cash::before { background: var(--success); }
+        .stat-icon {
+            width: 36px; height: 36px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; margin-bottom: 12px;
         }
-        .stat-change.up { color: var(--success); background: #e8f5e9; }
-        .stat-change.down { color: var(--danger); background: #ffebee; }
-        .detail-btn {
+        .stat-icon.estate { background: rgba(141,110,99,0.12); color: var(--estate); }
+        .stat-icon.stock { background: rgba(239,68,68,0.1); color: var(--danger); }
+        .stat-icon.pension { background: rgba(59,130,246,0.1); color: var(--info); }
+        .stat-icon.cash { background: rgba(16,185,129,0.1); color: var(--success); }
+        .stat-tile-label { font-size: 12px; color: var(--text-secondary); font-weight: 500; margin-bottom: 4px; }
+        .stat-tile-value { font-size: 18px; font-weight: 700; }
+        .stat-tile-change {
+            font-size: 11px; font-weight: 600; margin-top: 6px;
+            display: inline-flex; align-items: center; gap: 2px;
+            padding: 2px 8px; border-radius: 8px;
+        }
+        .stat-tile-change.up { color: var(--success); background: rgba(16,185,129,0.08); }
+        .stat-tile-change.down { color: var(--danger); background: rgba(239,68,68,0.08); }
+        .detail-arrow {
             position: absolute; top: 14px; right: 14px;
-            background: var(--surface); color: var(--primary);
-            border: none; border-radius: 12px; padding: 4px 10px;
-            font-size: 11px; font-weight: 600; cursor: pointer;
+            color: var(--text-secondary); opacity: 0.4; font-size: 18px;
+            transition: opacity 0.2s;
         }
-        .chart-section {
-            background: #fff; border-radius: var(--radius); padding: 20px;
-            margin-bottom: 16px; box-shadow: var(--card-shadow);
+        .stat-tile:hover .detail-arrow { opacity: 0.8; }
+
+        /* ── Tabs ── */
+        .tabs-wrap {
+            max-width: 900px; margin: 0 auto; padding: 0 20px;
+            position: sticky; top: 68px; z-index: 90;
+            background: linear-gradient(to bottom, var(--bg) 80%, transparent);
+            padding-top: 8px; padding-bottom: 12px;
         }
-        .chart-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; color: var(--text); }
-        .chart-container { position: relative; height: 420px; }
-        .chart-container.small { height: 260px; }
-        .chart-container.trend { height: 300px; }
-        .chart-container.xsmall { height: 200px; }
+        .tabs {
+            display: flex; gap: 6px;
+            background: var(--surface); padding: 6px;
+            border-radius: 16px; box-shadow: var(--shadow-sm);
+            overflow-x: auto; scrollbar-width: none;
+        }
+        .tabs::-webkit-scrollbar { display: none; }
+        .tab-btn {
+            flex: 1; min-width: 80px; padding: 10px 16px;
+            border-radius: 12px; border: none; background: transparent;
+            color: var(--text-secondary); font-size: 13px; font-weight: 600;
+            cursor: pointer; transition: all 0.2s; white-space: nowrap;
+            font-family: inherit;
+        }
+        .tab-btn.active {
+            background: var(--primary); color: #fff;
+            box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.35);
+        }
+
+        /* ── Tab Content ── */
+        .tab-content { display: none; animation: fadeUp 0.35s ease; }
+        .tab-content.active { display: block; }
+        .panel {
+            max-width: 900px; margin: 0 auto; padding: 8px 20px 16px;
+        }
+        .panel-card {
+            background: var(--surface); border-radius: var(--radius);
+            padding: 24px; box-shadow: var(--shadow);
+            margin-bottom: 16px;
+        }
+        .panel-title {
+            font-size: 16px; font-weight: 700; margin-bottom: 20px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .chart-wrap { position: relative; }
+        .chart-wrap.h300 { height: 300px; }
+        .chart-wrap.h260 { height: 260px; }
+        .chart-wrap.h200 { height: 200px; }
+
+        /* ── Alloc Legend ── */
         .alloc-grid {
             display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 16px;
         }
-        .alloc-item {
-            display: flex; align-items: center; gap: 10px; padding: 10px 12px;
-            background: var(--surface); border-radius: 12px;
+        .alloc-row {
+            display: flex; align-items: center; gap: 10px;
+            padding: 12px; border-radius: 12px;
+            background: var(--surface-hover); transition: background 0.2s;
         }
-        .alloc-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
-        .alloc-info { flex: 1; min-width: 0; }
-        .alloc-name { font-size: 13px; font-weight: 600; color: var(--text); }
+        .alloc-row:hover { background: var(--primary-light); }
+        .alloc-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .alloc-name { font-size: 13px; font-weight: 600; flex: 1; }
         .alloc-pct { font-size: 12px; color: var(--text-secondary); }
-        .alloc-value { font-size: 13px; font-weight: 700; color: var(--primary); text-align: right; }
-        .loading {
-            text-align: center; padding: 60px 20px; color: var(--text-secondary);
-        }
-        .loading-spinner {
-            width: 40px; height: 40px; border: 3px solid var(--primary-light);
-            border-top-color: var(--primary); border-radius: 50%;
-            animation: spin 1s linear infinite; margin: 0 auto 16px;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .footer {
-            text-align: center; padding: 20px; color: var(--text-secondary); font-size: 12px;
-        }
+        .alloc-value { font-size: 13px; font-weight: 700; color: var(--primary); }
+
+        /* ── Maturity ── */
         .maturity-list { display: flex; flex-direction: column; gap: 10px; }
-        .maturity-item {
+        .maturity-row {
             display: flex; align-items: center; gap: 12px;
-            padding: 12px 14px; border-radius: 12px; background: var(--surface);
+            padding: 14px; border-radius: 14px; background: var(--surface-hover);
+            transition: background 0.2s;
         }
+        .maturity-row:hover { background: var(--primary-light); }
         .maturity-badge {
-            font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 10px;
+            font-size: 11px; font-weight: 700; padding: 5px 12px;
+            border-radius: 100px; white-space: nowrap; flex-shrink: 0;
+        }
+        .maturity-badge.danger { background: rgba(239,68,68,0.12); color: var(--danger); }
+        .maturity-badge.warn { background: rgba(245,158,11,0.12); color: var(--warning); }
+        .maturity-badge.ok { background: rgba(16,185,129,0.12); color: var(--success); }
+        .maturity-name { font-size: 14px; font-weight: 600; }
+        .maturity-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+        .maturity-amt { font-size: 13px; font-weight: 700; color: var(--primary); margin-left: auto; padding-left: 8px; }
+
+        /* ── FAB ── */
+        .fab {
+            position: fixed; bottom: 24px; right: 24px; z-index: 500;
+            width: 56px; height: 56px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--crypto) 100%);
+            color: #fff; border: none; font-size: 24px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; box-shadow: 0 6px 20px rgba(var(--primary-rgb), 0.4);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .fab:hover { transform: scale(1.1) rotate(10deg); }
+        .fab:active { transform: scale(0.92); }
+
+        /* ── Modals ── */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+            display: none; z-index: 1000; align-items: center; justify-content: center;
+            backdrop-filter: blur(4px); animation: fadeIn 0.2s ease;
+        }
+        .modal-overlay.visible { display: flex; }
+        .modal-box {
+            background: var(--surface); border-radius: var(--radius-lg);
+            max-width: 440px; width: 90%; max-height: 80vh; overflow-y: auto;
+            box-shadow: var(--shadow-lg); padding: 28px;
+            animation: fadeUp 0.3s ease;
+        }
+        .modal-box.wide { max-width: 520px; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal-title { font-size: 20px; font-weight: 700; }
+        .modal-x { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary); }
+        .modal-option {
+            display: flex; align-items: center; gap: 14px;
+            padding: 16px; border-radius: 14px;
+            background: var(--surface-hover); margin-bottom: 10px;
+            cursor: pointer; transition: all 0.2s; border: 2px solid transparent;
+        }
+        .modal-option:hover { border-color: var(--primary-light); background: var(--primary-light); }
+        .modal-option-icon { font-size: 28px; }
+        .modal-option-title { font-size: 15px; font-weight: 700; }
+        .modal-option-sub { font-size: 13px; color: var(--text-secondary); }
+        .detail-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .detail-table th, .detail-table td { padding: 10px; text-align: left; border-bottom: 1px solid rgba(var(--primary-rgb),0.1); }
+        .detail-table th { font-weight: 600; color: var(--text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .detail-total { margin-top: 14px; padding: 14px; background: var(--surface-hover); border-radius: 12px; font-size: 15px; font-weight: 700; text-align: right; }
+
+        /* ── Toast ── */
+        .toast {
+            position: fixed; bottom: 90px; left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(30,30,40,0.92); color: #fff;
+            padding: 12px 24px; border-radius: 100px;
+            font-size: 14px; font-weight: 500; z-index: 2000;
+            opacity: 0; transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+            pointer-events: none; backdrop-filter: blur(8px);
             white-space: nowrap;
         }
-        .maturity-badge.danger { background: #ffebee; color: var(--danger); }
-        .maturity-badge.warning { background: #fff3e0; color: #e65100; }
-        .maturity-badge.success { background: #e8f5e9; color: var(--success); }
-        .maturity-info { flex: 1; }
-        .maturity-name { font-size: 13px; font-weight: 600; }
-        .maturity-sub { font-size: 12px; color: var(--text-secondary); }
-        .maturity-amount { font-size: 13px; font-weight: 700; color: var(--primary); }
-
-        .load-modal, .detail-modal {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.5);
-            display: none; z-index: 2000; align-items: center; justify-content: center;
-        }
-        .load-modal.visible, .detail-modal.visible { display: flex; }
-        .load-modal-box {
-            background: #fff; border-radius: var(--radius); padding: 24px;
-            max-width: 360px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-        }
-        .detail-modal-box {
-            background: #fff; border-radius: var(--radius); padding: 24px;
-            max-width: 520px; width: 90%; max-height: 80vh; overflow-y: auto;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-        }
-        .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
-        .modal-desc { font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; }
-        .load-option {
-            display: flex; align-items: center; gap: 12px;
-            padding: 14px; border-radius: 12px; border: 2px solid var(--surface);
-            margin-bottom: 10px; cursor: pointer; transition: all 0.2s;
-        }
-        .load-option:hover { border-color: var(--primary-light); background: var(--surface); }
-        .load-close, .detail-close {
-            width: 100%; padding: 12px; margin-top: 8px;
-            background: var(--surface); border: none; border-radius: 12px;
-            font-size: 14px; font-weight: 600; color: var(--text-secondary);
-            cursor: pointer;
-        }
-        .detail-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-        .detail-title { font-size: 18px; font-weight: 700; }
-        .detail-x { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary); }
-        .detail-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        .detail-table th, .detail-table td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; }
-        .detail-table th { font-weight: 600; color: var(--text-secondary); background: var(--surface); }
-        .detail-table td { color: var(--text); }
-        .detail-total { margin-top: 12px; padding: 12px; background: var(--surface); border-radius: 12px; font-size: 14px; font-weight: 700; text-align: right; }
-
-        #fileInput { display: none; }
-        .toast {
-            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px);
-            background: #323232; color: #fff; padding: 12px 24px; border-radius: 24px;
-            font-size: 14px; font-weight: 500; z-index: 3000; opacity: 0;
-            transition: all 0.3s ease; pointer-events: none;
-        }
         .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+        /* ── Footer ── */
+        .footer { text-align: center; padding: 40px 20px; color: var(--text-secondary); font-size: 12px; }
+
         @media (min-width: 768px) {
-            .stats-grid { grid-template-columns: repeat(4, 1fr); }
+            .stats { grid-template-columns: repeat(4, 1fr); }
             .alloc-grid { grid-template-columns: repeat(3, 1fr); }
+            .hero-value { font-size: 56px; }
         }
     </style>
 </head>
 <body>
 
-<div id="passwordScreen">
-    <div class="lock-icon">&#128274;</div>
-    <div class="lock-title">유주네 자산 현황</div>
-    <div class="lock-subtitle">비밀번호를 입력하세요</div>
-    <div class="pin-inputs" id="pinInputs">
-        <input type="password" maxlength="1" data-index="0" inputmode="numeric">
-        <input type="password" maxlength="1" data-index="1" inputmode="numeric">
-        <input type="password" maxlength="1" data-index="2" inputmode="numeric">
-        <input type="password" maxlength="1" data-index="3" inputmode="numeric">
-        <input type="password" maxlength="1" data-index="4" inputmode="numeric">
-        <input type="password" maxlength="1" data-index="5" inputmode="numeric">
+<!-- ── PIN Screen ── -->
+<div id="pinScreen">
+    <div class="glass-card">
+        <div class="lock-icon">&#128274;</div>
+        <h2>유주네 자산 현황</h2>
+        <p>6자리 비밀번호를 입력하세요</p>
+        <div class="pin-dots" id="pinDots">
+            <input type="password" maxlength="1" data-index="0" inputmode="numeric">
+            <input type="password" maxlength="1" data-index="1" inputmode="numeric">
+            <input type="password" maxlength="1" data-index="2" inputmode="numeric">
+            <input type="password" maxlength="1" data-index="3" inputmode="numeric">
+            <input type="password" maxlength="1" data-index="4" inputmode="numeric">
+            <input type="password" maxlength="1" data-index="5" inputmode="numeric">
+        </div>
+        <div class="pin-error" id="pinError"></div>
+        <button class="glass-btn" onclick="checkPin()">확인</button>
     </div>
-    <div class="pin-error" id="pinError"></div>
-    <button class="unlock-btn" id="unlockBtn" onclick="checkPassword()">확인</button>
 </div>
 
-<div class="app" id="mainApp">
-    <div class="top-bar">
-        <h1>유주네 자산 현황</h1>
-        <div class="top-actions">
-            <button class="top-btn" onclick="openLoadModal()">
-                <span>&#128229;</span> 데이터로드
-            </button>
-            <button class="top-btn" id="shareBtn" onclick="shareLink()">
-                <span>&#128279;</span> <span id="shareText">공유</span>
-            </button>
+<!-- ── Main App ── -->
+<div id="app">
+    <header class="header">
+        <div class="header-inner">
+            <div class="header-title">
+                <span class="material-symbols-rounded">account_balance_wallet</span>
+                유주네 자산 현황
+            </div>
+            <div class="header-actions">
+                <button class="icon-btn" onclick="toggleTheme()" title="테마 전환">
+                    <span class="material-symbols-rounded" id="themeIcon">dark_mode</span>
+                </button>
+                <button class="icon-btn" onclick="shareLink()" title="링크 공유">
+                    <span class="material-symbols-rounded">share</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <section class="hero" id="heroSection">
+        <div class="hero-label">2026년 5월 순자산</div>
+        <div class="hero-value" id="heroValue">0원</div>
+        <div class="hero-change" id="heroChange">
+            <span class="material-symbols-rounded" style="font-size:18px">trending_up</span>
+            <span>+0원 (0.00%)</span>
+        </div>
+    </section>
+
+    <section class="stats" id="statsSection"></section>
+
+    <div class="tabs-wrap">
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="trend" onclick="switchTab('trend')">자산추이</button>
+            <button class="tab-btn" data-tab="alloc" onclick="switchTab('alloc')">배분</button>
+            <button class="tab-btn" data-tab="purpose" onclick="switchTab('purpose')">목적별</button>
+            <button class="tab-btn" data-tab="maturity" onclick="switchTab('maturity')">만기알림</button>
         </div>
     </div>
-    <div id="contentArea">
-        <div class="loading">
-            <div class="loading-spinner"></div>
-            <p>자산 데이터를 불러오는 중...</p>
+
+    <div id="tab-trend" class="tab-content active">
+        <div class="panel">
+            <div class="panel-card">
+                <div class="panel-title"><span class="material-symbols-rounded">show_chart</span> 순자산 추이</div>
+                <div class="chart-wrap h260"><canvas id="netChart"></canvas></div>
+            </div>
+            <div class="panel-card">
+                <div class="panel-title"><span class="material-symbols-rounded">stacked_line_chart</span> 개별 자산 추이 (부동산 제외)</div>
+                <div class="chart-wrap h260"><canvas id="indivChart"></canvas></div>
+            </div>
+            <div class="panel-card">
+                <div class="panel-title"><span class="material-symbols-rounded">home</span> 부동산 추이</div>
+                <div class="chart-wrap h200"><canvas id="reChart"></canvas></div>
+            </div>
         </div>
     </div>
+
+    <div id="tab-alloc" class="tab-content">
+        <div class="panel">
+            <div class="panel-card">
+                <div class="panel-title"><span class="material-symbols-rounded">donut_large</span> 자산 배분</div>
+                <div class="chart-wrap h260"><canvas id="allocChart"></canvas></div>
+                <div class="alloc-grid" id="allocGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-purpose" class="tab-content">
+        <div class="panel">
+            <div class="panel-card">
+                <div class="panel-title"><span class="material-symbols-rounded">flag</span> 목적별 자산 현황</div>
+                <div class="chart-wrap h260"><canvas id="purposeChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-maturity" class="tab-content">
+        <div class="panel">
+            <div class="panel-card">
+                <div class="panel-title"><span class="material-symbols-rounded">schedule</span> 예적금 만기 알림</div>
+                <div class="maturity-list" id="maturityList"></div>
+            </div>
+        </div>
+    </div>
+
     <div class="footer">
         Family Asset Dashboard &middot; 데이터 출처: 유주네 자산 현황.xlsx
     </div>
 </div>
 
-<div class="load-modal" id="loadModal" onclick="if(event.target===this)closeLoadModal()">
-    <div class="load-modal-box">
-        <div class="modal-title">데이터 불러오기</div>
-        <div class="modal-desc">엑셀 파일을 업로드하거나 GitHub에서 최신 데이터를 가져옵니다.</div>
-        <div class="load-option" onclick="uploadExcel()">
-            <div style="font-size:24px">&#128193;</div>
-            <div style="flex:1">
-                <div style="font-size:14px;font-weight:700">엑셀 파일 업로드</div>
-                <div style="font-size:12px;color:var(--text-secondary)">수정한 .xlsx 파일을 선택</div>
+<!-- ── Load Modal ── -->
+<div class="modal-overlay" id="loadModal" onclick="if(event.target===this)closeLoadModal()">
+    <div class="modal-box">
+        <div class="modal-header">
+            <div class="modal-title">데이터 불러오기</div>
+            <button class="modal-x" onclick="closeLoadModal()">&times;</button>
+        </div>
+        <div class="modal-option" onclick="uploadExcel()">
+            <div class="modal-option-icon">&#128193;</div>
+            <div>
+                <div class="modal-option-title">엑셀 파일 업로드</div>
+                <div class="modal-option-sub">수정한 .xlsx 파일을 선택하세요</div>
             </div>
         </div>
-        <div class="load-option" onclick="fetchFromGitHub()">
-            <div style="font-size:24px">&#127760;</div>
-            <div style="flex:1">
-                <div style="font-size:14px;font-weight:700">GitHub에서 가져오기</div>
-                <div style="font-size:12px;color:var(--text-secondary)">최신 엑셀 데이터를 자동 다운로드</div>
+        <div class="modal-option" onclick="fetchFromGitHub()">
+            <div class="modal-option-icon">&#127760;</div>
+            <div>
+                <div class="modal-option-title">GitHub에서 가져오기</div>
+                <div class="modal-option-sub">최신 엑셀 데이터를 자동 다운로드</div>
             </div>
         </div>
-        <button class="load-close" onclick="closeLoadModal()">취소</button>
     </div>
 </div>
 
-<div class="detail-modal" id="detailModal" onclick="if(event.target===this)closeDetailModal()">
-    <div class="detail-modal-box" id="detailModalBox"></div>
+<!-- ── Detail Modal ── -->
+<div class="modal-overlay" id="detailModal" onclick="if(event.target===this)closeDetailModal()">
+    <div class="modal-box wide" id="detailBox"></div>
 </div>
 
-<input type="file" id="fileInput" accept=".xlsx" onchange="handleFileUpload(event)">
+<!-- ── FAB ── -->
+<button class="fab" onclick="openLoadModal()" title="데이터로드">
+    <span class="material-symbols-rounded">sync</span>
+</button>
+
+<input type="file" id="fileInput" accept=".xlsx" style="display:none" onchange="handleFileUpload(event)">
 <div class="toast" id="toast"></div>
 
 <script>
@@ -352,64 +592,134 @@ let EMBEDDED_DATA = {
 };
 
 const COLORS = {
-    domestic_stock: '#ef5350', overseas_stock: '#ff7043', pension: '#2196f3',
-    cash: '#4caf50', savings: '#ff9800', crypto: '#9c27b0',
-    real_estate: '#795548', debt: '#ef5350',
+    real_estate: '#8d6e63', stocks: '#ef4444', pension: '#3b82f6',
+    cash: '#10b981', crypto: '#9333ea', debt: '#f59e0b',
 };
 
-const datalabelsPlugin = window.ChartDataLabels || window.chartjsPluginDatalabels;
-if (datalabelsPlugin) { Chart.register(datalabelsPlugin); }
+const CHART_COLORS = {
+    real_estate: '#8d6e63', stocks: '#f87171', pension: '#60a5fa',
+    cash: '#34d399', crypto: '#c084fc',
+};
 
-const pinInputs = document.querySelectorAll('#pinInputs input');
+const CHART_COLORS_DARK = {
+    real_estate: '#bcaaa4', stocks: '#f87171', pension: '#60a5fa',
+    cash: '#34d399', crypto: '#c084fc',
+};
+
+let charts = [];
+let isDark = false;
+
+const datalabelsPlugin = window.ChartDataLabels || window.chartjsPluginDatalabels;
+if (datalabelsPlugin) Chart.register(datalabelsPlugin);
+
+/* ── PIN ── */
+const pinInputs = document.querySelectorAll('#pinDots input');
 pinInputs.forEach((input, idx) => {
     input.addEventListener('input', (e) => {
         document.getElementById('pinError').textContent = '';
-        if (e.target.value && idx < pinInputs.length - 1) pinInputs[idx + 1].focus();
+        if (e.target.value) {
+            input.classList.add('filled');
+            if (idx < pinInputs.length - 1) pinInputs[idx + 1].focus();
+        } else {
+            input.classList.remove('filled');
+        }
         const entered = Array.from(pinInputs).map(i => i.value).join('');
-        if (entered.length === 6) checkPassword();
+        if (entered.length === 6) setTimeout(() => checkPin(), 150);
     });
     input.addEventListener('keydown', (e) => {
-        if (e.key === 'Backspace' && !e.target.value && idx > 0) pinInputs[idx - 1].focus();
-        if (e.key === 'Enter') checkPassword();
+        if (e.key === 'Backspace' && !e.target.value && idx > 0) {
+            pinInputs[idx - 1].focus();
+            pinInputs[idx - 1].classList.remove('filled');
+        }
+        if (e.key === 'Enter') checkPin();
     });
 });
 
-function checkPassword() {
+function checkPin() {
     const entered = Array.from(pinInputs).map(i => i.value).join('');
     if (entered === CORRECT_PIN) {
-        document.getElementById('passwordScreen').classList.add('hidden');
-        document.getElementById('mainApp').classList.add('visible');
+        document.getElementById('pinScreen').classList.add('hidden');
+        document.getElementById('app').classList.add('visible');
         loadData();
     } else {
         document.getElementById('pinError').textContent = '비밀번호가 올바르지 않습니다';
-        pinInputs.forEach(i => { i.value = ''; });
+        pinInputs.forEach(i => { i.value = ''; i.classList.remove('filled'); });
         pinInputs[0].focus();
     }
 }
 
-function shareLink() {
-    navigator.clipboard.writeText(window.location.href).then(() => {
-        const btn = document.getElementById('shareBtn');
-        const text = document.getElementById('shareText');
-        btn.classList.add('copied'); text.textContent = '복사완료!';
-        setTimeout(() => { btn.classList.remove('copied'); text.textContent = '공유'; }, 2000);
-    });
+/* ── Theme ── */
+function initTheme() {
+    const saved = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    isDark = saved ? saved === 'dark' : prefersDark;
+    applyTheme();
+}
+function applyTheme() {
+    document.body.classList.toggle('dark', isDark);
+    document.getElementById('themeIcon').textContent = isDark ? 'light_mode' : 'dark_mode';
+}
+function toggleTheme() {
+    isDark = !isDark;
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    applyTheme();
+    loadData();
+}
+initTheme();
+
+/* ── Helpers ── */
+function formatWon(v) {
+    if (v === 0) return '0원';
+    const man = Math.round(v / 10000);
+    if (man >= 10000) {
+        const eok = (man / 10000).toFixed(2);
+        return parseFloat(eok).toLocaleString('ko-KR') + '억원';
+    }
+    return man.toLocaleString('ko-KR') + '만원';
+}
+function formatWonFull(v) {
+    return Math.round(v).toLocaleString('ko-KR') + '원';
+}
+function formatWonChart(v) {
+    return Math.round(v).toLocaleString('ko-KR') + '만원';
+}
+function animateCount(el, target, duration = 1200) {
+    const start = 0;
+    const startTime = performance.now();
+    function update(now) {
+        const elapsed = now - startTime;
+        const p = Math.min(elapsed / duration, 1);
+        const ease = 1 - Math.pow(1 - p, 3);
+        const cur = Math.round(start + (target - start) * ease);
+        el.textContent = formatWonFull(cur);
+        if (p < 1) requestAnimationFrame(update);
+    }
+    requestAnimationFrame(update);
 }
 
 function showToast(msg) {
     const t = document.getElementById('toast');
-    t.textContent = msg; t.classList.add('show');
+    t.textContent = msg;
+    t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 2500);
 }
+function shareLink() {
+    navigator.clipboard.writeText(window.location.href).then(() => showToast('링크가 복사되었습니다'));
+}
 
+/* ── Tabs ── */
+function switchTab(name) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    document.querySelector('[data-tab="' + name + '"]').classList.add('active');
+}
+
+/* ── Modal ── */
 function openLoadModal() { document.getElementById('loadModal').classList.add('visible'); }
 function closeLoadModal() { document.getElementById('loadModal').classList.remove('visible'); }
 function closeDetailModal() { document.getElementById('detailModal').classList.remove('visible'); }
-
-function uploadExcel() {
-    closeLoadModal();
-    document.getElementById('fileInput').click();
-}
+function uploadExcel() { closeLoadModal(); document.getElementById('fileInput').click(); }
 
 async function fetchFromGitHub() {
     closeLoadModal();
@@ -417,17 +727,9 @@ async function fetchFromGitHub() {
     try {
         const res = await fetch(GITHUB_RAW_URL);
         if (!res.ok) throw new Error('HTTP ' + res.status);
-        const buf = await res.arrayBuffer();
-        const data = parseExcel(buf);
-        if (data) {
-            EMBEDDED_DATA = data;
-            loadData();
-            showToast('최신 데이터를 불러왔습니다!');
-        }
-    } catch (e) {
-        console.error(e);
-        showToast('GitHub에서 불러오기 실패: ' + e.message);
-    }
+        const data = parseExcel(await res.arrayBuffer());
+        if (data) { EMBEDDED_DATA = data; loadData(); showToast('최신 데이터를 불러왔습니다!'); }
+    } catch (e) { showToast('불러오기 실패: ' + e.message); }
 }
 
 function handleFileUpload(e) {
@@ -438,22 +740,15 @@ function handleFileUpload(e) {
     reader.onload = (evt) => {
         try {
             const data = parseExcel(evt.target.result);
-            if (data) {
-                EMBEDDED_DATA = data;
-                loadData();
-                showToast('데이터 로드 완료! (' + data.metadata.last_updated + ')');
-            }
-        } catch (err) {
-            console.error(err);
-            showToast('엑셀 파싱 오류: ' + err.message);
-        }
+            if (data) { EMBEDDED_DATA = data; loadData(); showToast('데이터 로드 완료!'); }
+        } catch (err) { showToast('엑셀 파싱 오류: ' + err.message); }
     };
     reader.readAsArrayBuffer(file);
     e.target.value = '';
 }
 
-function parseExcel(arrayBuffer) {
-    const wb = XLSX.read(arrayBuffer, { type: 'array', cellFormula: false });
+function parseExcel(buf) {
+    const wb = XLSX.read(buf, { type: 'array', cellFormula: false });
     const wsDetail = wb.Sheets['상세 자산'];
     const wsLoan = wb.Sheets['대출'];
     if (!wsDetail) throw new Error('"상세 자산" 시트를 찾을 수 없습니다');
@@ -467,7 +762,7 @@ function parseExcel(arrayBuffer) {
         const row = detail[i];
         if (!row[0]) continue;
         const month = String(row[0]).trim();
-        const category = String(row[1] || '').trim();
+        const cat = String(row[1] || '').trim();
         const owner = String(row[2] || '').trim();
         const name = String(row[3] || '').trim();
         const amount = parseFloat(row[4]) || 0;
@@ -475,522 +770,287 @@ function parseExcel(arrayBuffer) {
         const purpose = String(row[6] || '').trim();
         const maturity = row[7] ? String(row[7]).trim() : '-';
         const period = month.replace('2026년 ', '2026-').replace('3월','03').replace('4월','04').replace('5월','05').replace('6월','06').replace('7월','07').replace('8월','08').replace('9월','09').replace('10월','10').replace('11월','11').replace('12월','12');
-
         if (!monthlyData[period]) monthlyData[period] = {};
-        if (!monthlyData[period][category]) monthlyData[period][category] = 0;
-        monthlyData[period][category] += amount;
-
-        allDetails.push({ month, period, category, owner, name, amount, return: ret, purpose, maturity, type: category });
+        if (!monthlyData[period][cat]) monthlyData[period][cat] = 0;
+        monthlyData[period][cat] += amount;
+        allDetails.push({ month, period, category: cat, owner, name, amount, return: ret, purpose, maturity, type: cat });
     }
-
     Object.keys(monthlyData).forEach(p => { monthlyData[p]['부동산'] = 2200000000; });
 
     let loanTotal = 349025014;
     for (let i = 1; i < loan.length; i++) {
         const row = loan[i];
-        if (row[0] === '총액' && row[2] && typeof row[2] === 'number') {
-            loanTotal = row[2]; break;
-        }
+        if (row[0] === '총액' && row[2] && typeof row[2] === 'number') { loanTotal = row[2]; break; }
     }
 
     const periods = Object.keys(monthlyData).sort();
     const latestPeriod = periods[periods.length - 1];
     const latest = monthlyData[latestPeriod];
-
-    const cashTotal = (latest['예금'] || 0) + (latest['적금'] || 0);
-    const stocksTotal = latest['주식'] || 0;
-    const pensionTotal = latest['개인연금'] || 0;
-    const cryptoTotal = latest['가상화폐'] || 0;
-    const realEstateTotal = latest['부동산'] || 0;
-    const totalVal = cashTotal + stocksTotal + pensionTotal + cryptoTotal + realEstateTotal;
-    const netVal = totalVal - loanTotal;
-
+    const cashTotal = (latest['예금']||0)+(latest['적금']||0);
+    const totalVal = cashTotal+(latest['주식']||0)+(latest['개인연금']||0)+(latest['가상화폐']||0)+(latest['부동산']||0);
     const allocations = [
-        { cat: 'real_estate', label: '부동산', amount: realEstateTotal },
-        { cat: 'stocks', label: '주식', amount: stocksTotal },
-        { cat: 'pension', label: '개인연금', amount: pensionTotal },
-        { cat: 'cash', label: '현금/예금', amount: cashTotal },
-        { cat: 'crypto', label: '가상화폐', amount: cryptoTotal },
+        { cat:'real_estate', label:'부동산', amount:latest['부동산']||0 },
+        { cat:'stocks', label:'주식', amount:latest['주식']||0 },
+        { cat:'pension', label:'개인연금', amount:latest['개인연금']||0 },
+        { cat:'cash', label:'현금/예금', amount:cashTotal },
+        { cat:'crypto', label:'가상화폐', amount:latest['가상화폐']||0 },
     ];
-
     const assetAllocation = allocations.map(a => ({
-        category: a.cat,
-        category_label: a.label,
-        amount_krw: Math.round(a.amount),
-        percentage: totalVal > 0 ? parseFloat(((a.amount / totalVal) * 100).toFixed(2)) : 0
-    })).filter(a => a.amount_krw > 0).sort((a, b) => b.amount_krw - a.amount_krw);
+        category: a.cat, category_label: a.label, amount_krw: Math.round(a.amount),
+        percentage: totalVal > 0 ? parseFloat(((a.amount/totalVal)*100).toFixed(2)) : 0
+    })).filter(a=>a.amount_krw>0).sort((a,b)=>b.amount_krw-a.amount_krw);
 
-    const historicalTrends = periods.map(period => {
-        const d = monthlyData[period];
-        const t = (d['예금']||0) + (d['적금']||0) + (d['주식']||0) + (d['개인연금']||0) + (d['가상화폐']||0) + (d['부동산']||0);
-        return {
-            period,
-            net_assets_krw: Math.round(t - loanTotal),
-            categories: {
-                cash: Math.round((d['예금']||0) + (d['적금']||0)),
-                stocks: Math.round(d['주식']||0),
-                pension: Math.round(d['개인연금']||0),
-                crypto: Math.round(d['가상화폐']||0),
-                real_estate: Math.round(d['부동산']||0)
-            }
-        };
+    const historicalTrends = periods.map(p => {
+        const d = monthlyData[p];
+        const t = (d['예금']||0)+(d['적금']||0)+(d['주식']||0)+(d['개인연금']||0)+(d['가상화폐']||0)+(d['부동산']||0);
+        return { period:p, net_assets_krw: Math.round(t-loanTotal), categories: {
+            cash: Math.round((d['예금']||0)+(d['적금']||0)), stocks: Math.round(d['주식']||0),
+            pension: Math.round(d['개인연금']||0), crypto: Math.round(d['가상화폐']||0), real_estate: Math.round(d['부동산']||0)
+        }};
     });
 
-    // detail_breakdown
     const detailMap = { real_estate: [{name:'아파트',amount:2200000000,owner:'공동',purpose:'부동산',return:null,maturity:'-'}], debt: [], stocks: [], pension: [], cash: [], crypto: [] };
-    const latestDetails = allDetails.filter(d => d.period === latestPeriod);
-    latestDetails.forEach(d => {
-        const item = { name: d.name, amount: Math.round(d.amount), owner: d.owner, purpose: d.purpose, return: d.return, maturity: d.maturity, type: d.type };
-        if (d.category === '주식') detailMap.stocks.push(item);
-        else if (d.category === '개인연금') detailMap.pension.push(item);
-        else if (d.category === '예금' || d.category === '적금') detailMap.cash.push(item);
-        else if (d.category === '가상화폐') detailMap.crypto.push(item);
+    allDetails.filter(d=>d.period===latestPeriod).forEach(d => {
+        const item = { name:d.name, amount:Math.round(d.amount), owner:d.owner, purpose:d.purpose, return:d.return, maturity:d.maturity, type:d.type };
+        if (d.category==='주식') detailMap.stocks.push(item);
+        else if (d.category==='개인연금') detailMap.pension.push(item);
+        else if (d.category==='예금'||d.category==='적금') detailMap.cash.push(item);
+        else if (d.category==='가상화폐') detailMap.crypto.push(item);
     });
-
-    return {
-        total_valuation_krw: Math.round(totalVal),
-        net_valuation_krw: Math.round(netVal),
-        total_debt_krw: Math.round(loanTotal),
-        currency: 'KRW',
-        asset_allocation: assetAllocation,
-        historical_trends: historicalTrends,
-        detail_breakdown: detailMap,
-        metadata: { source: '유주네 자산 현황.xlsx', last_updated: latestPeriod }
-    };
+    if (wsLoan) {
+        const loanJson = XLSX.utils.sheet_to_json(wsLoan, { header:1, defval:null });
+        for (let i=1;i<loanJson.length;i++) {
+            const row=loanJson[i];
+            if (!row[0]||row[0]==='총액') continue;
+            if (row[2]&&typeof row[2]==='number') detailMap.debt.push({ name:String(row[1]||''), amount:Math.round(row[2]), owner:String(row[0]||''), purpose:'대출', return:null, maturity:'-' });
+        }
+    }
+    return { total_valuation_krw:Math.round(totalVal), net_valuation_krw:Math.round(totalVal-loanTotal), total_debt_krw:Math.round(loanTotal), currency:'KRW', asset_allocation:assetAllocation, historical_trends:historicalTrends, detail_breakdown:detailMap, metadata:{source:'유주네 자산 현황.xlsx',last_updated:latestPeriod} };
 }
 
-function formatWon(value) {
-    return Math.round(value / 10000).toLocaleString('ko-KR') + '만원';
-}
-function formatWonChart(valueInMan) {
-    return Math.round(valueInMan).toLocaleString('ko-KR') + '만원';
-}
-function formatNumber(v) {
-    return Math.round(v).toLocaleString('ko-KR');
-}
-
-function computeIndividualMin(trends) {
-    const allValues = [];
-    trends.forEach(t => {
-        allValues.push((t.categories.cash || 0) / 10000);
-        allValues.push((t.categories.stocks || 0) / 10000);
-        allValues.push((t.categories.pension || 0) / 10000);
-        allValues.push((t.categories.crypto || 0) / 10000);
-    });
-    return Math.max(0, Math.floor(Math.min(...allValues) * 0.90));
-}
-
-function getMaturityDays(dateStr) {
-    if (!dateStr || dateStr === '-') return null;
-    const parts = dateStr.split('.');
-    if (parts.length < 3) return null;
-    const d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
-    const diff = Math.ceil((d - TODAY) / (1000 * 60 * 60 * 24));
-    return diff;
-}
-
-function loadData() {
-    renderDashboard(EMBEDDED_DATA);
-}
-
-let charts = [];
-function destroyCharts() {
-    charts.forEach(c => c.destroy());
-    charts = [];
-}
+/* ── Render ── */
+function destroyCharts() { charts.forEach(c=>c.destroy()); charts=[]; }
 
 function showDetail(category) {
     const bd = EMBEDDED_DATA.detail_breakdown;
     const items = bd[category] || [];
-    const catInfo = EMBEDDED_DATA.asset_allocation.find(a => a.category === category);
-    const catLabel = catInfo ? catInfo.category_label : category;
-    const total = items.reduce((s, i) => s + (i.amount || 0), 0);
-
-    let rows = '';
-    items.forEach(item => {
-        const ret = item.return !== null && item.return !== undefined ? (item.return * 100).toFixed(2) + '%' : '-';
-        const retColor = item.return > 0 ? 'color:var(--success)' : (item.return < 0 ? 'color:var(--danger)' : '');
-        rows += `<tr><td>${item.name}</td><td>${item.owner}</td><td>${formatWon(item.amount)}</td><td style="${retColor}">${ret}</td><td>${item.purpose}</td></tr>`;
+    const catInfo = EMBEDDED_DATA.asset_allocation.find(a=>a.category===category);
+    const catLabel = catInfo ? catInfo.category_label : (category==='debt'?'부채':category);
+    const total = items.reduce((s,i)=>s+(i.amount||0),0);
+    let rows='';
+    items.forEach(item=>{
+        const ret = item.return!==null&&item.return!==undefined ? (item.return*100).toFixed(2)+'%' : '-';
+        const retColor = item.return>0?'color:var(--success)':(item.return<0?'color:var(--danger)':'');
+        const extra = item.type ? ` [${item.type}]` : '';
+        rows += `<tr><td>${item.name}${extra}</td><td>${item.owner}</td><td>${formatWonFull(item.amount)}</td><td style="${retColor}">${ret}</td><td>${item.purpose}</td></tr>`;
     });
-
-    document.getElementById('detailModalBox').innerHTML = `
-        <div class="detail-header">
-            <div class="detail-title">${catLabel} 상세 내역</div>
-            <button class="detail-x" onclick="closeDetailModal()">&times;</button>
-        </div>
-        <table class="detail-table">
-            <thead><tr><th>상품명</th><th>예금주</th><th>금액</th><th>수익률</th><th>목적</th></tr></thead>
-            <tbody>${rows}</tbody>
-        </table>
-        <div class="detail-total">합계: ${formatWon(total)}</div>
-    `;
+    document.getElementById('detailBox').innerHTML = `
+        <div class="modal-header"><div class="modal-title">${catLabel} 상세 내역</div><button class="modal-x" onclick="closeDetailModal()">&times;</button></div>
+        <table class="detail-table"><thead><tr><th>상품명</th><th>예금주</th><th>금액</th><th>수익률</th><th>목적</th></tr></thead><tbody>${rows}</tbody></table>
+        <div class="detail-total">합계: ${formatWonFull(total)}</div>`;
     document.getElementById('detailModal').classList.add('visible');
 }
 
-function renderDashboard(data) {
+function getMaturityDays(dateStr) {
+    if (!dateStr || dateStr==='-') return null;
+    const p = dateStr.split('.');
+    if (p.length<3) return null;
+    const d = new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2]));
+    return Math.ceil((d - TODAY) / (86400000));
+}
+
+function loadData() {
+    renderAll(EMBEDDED_DATA);
+}
+
+function renderAll(data) {
     destroyCharts();
     const trends = data.historical_trends;
     const allocation = data.asset_allocation;
-    const latest = trends[trends.length - 1];
-    const prev = trends.length > 1 ? trends[trends.length - 2] : null;
+    const latest = trends[trends.length-1];
+    const prev = trends.length>1 ? trends[trends.length-2] : null;
     const momChange = prev ? latest.net_assets_krw - prev.net_assets_krw : 0;
-    const momPct = prev ? ((momChange / prev.net_assets_krw) * 100).toFixed(2) : '0.00';
-    const periods = trends.map(t => t.period.replace('2026-', ''));
-    const monthCount = periods.length;
+    const momPct = prev ? ((momChange/prev.net_assets_krw)*100).toFixed(2) : '0.00';
+    const periods = trends.map(t => t.period.replace('2026-',''));
+    const palette = isDark ? CHART_COLORS_DARK : CHART_COLORS;
 
-    const getChange = (cat) => {
-        if (!prev) return { val: 0, pct: '0.00' };
-        const cur = latest.categories[cat] || 0;
-        const pre = prev.categories[cat] || 0;
-        const diff = cur - pre;
-        const pct = pre ? ((diff / pre) * 100).toFixed(2) : '0.00';
-        return { val: diff, pct };
+    // Hero
+    const heroVal = document.getElementById('heroValue');
+    animateCount(heroVal, data.net_valuation_krw);
+    const heroChg = document.getElementById('heroChange');
+    heroChg.className = 'hero-change ' + (momChange>=0?'up':'down');
+    heroChg.innerHTML = `<span class="material-symbols-rounded" style="font-size:18px">${momChange>=0?'trending_up':'trending_down'}</span><span>${momChange>=0?'+':''}${formatWon(Math.abs(momChange))} (${momChange>=0?'+':''}${momPct}%)</span>`;
+
+    // Stats
+    const getChg = (cat) => {
+        if (!prev) return {val:0,pct:'0.00'};
+        const c=latest.categories[cat]||0, p=prev.categories[cat]||0;
+        const d=c-p; return {val:d, pct:p?((d/p)*100).toFixed(2):'0.00'};
     };
-    const cashChange = getChange('cash');
-    const stockChange = getChange('stocks');
-    const pensionChange = getChange('pension');
-    const cryptoChange = getChange('crypto');
+    const stockChg=getChg('stocks'), pensionChg=getChg('pension'), cashChg=getChg('cash'), cryptoChg=getChg('crypto');
+    document.getElementById('statsSection').innerHTML = `
+        <div class="stat-tile estate" onclick="showDetail('real_estate')">
+            <span class="material-symbols-rounded detail-arrow">chevron_right</span>
+            <div class="stat-icon estate"><span class="material-symbols-rounded">home</span></div>
+            <div class="stat-tile-label">부동산</div>
+            <div class="stat-tile-value">${formatWon(latest.categories.real_estate||0)}</div>
+        </div>
+        <div class="stat-tile stock" onclick="showDetail('stocks')">
+            <span class="material-symbols-rounded detail-arrow">chevron_right</span>
+            <div class="stat-icon stock"><span class="material-symbols-rounded">show_chart</span></div>
+            <div class="stat-tile-label">주식</div>
+            <div class="stat-tile-value">${formatWon(latest.categories.stocks||0)}</div>
+            <div class="stat-tile-change ${stockChg.val>=0?'up':'down'}">${stockChg.val>=0?'+':''}${stockChg.pct}%</div>
+        </div>
+        <div class="stat-tile pension" onclick="showDetail('pension')">
+            <span class="material-symbols-rounded detail-arrow">chevron_right</span>
+            <div class="stat-icon pension"><span class="material-symbols-rounded">savings</span></div>
+            <div class="stat-tile-label">개인연금</div>
+            <div class="stat-tile-value">${formatWon(latest.categories.pension||0)}</div>
+            <div class="stat-tile-change ${pensionChg.val>=0?'up':'down'}">${pensionChg.val>=0?'+':''}${pensionChg.pct}%</div>
+        </div>
+        <div class="stat-tile cash" onclick="showDetail('cash')">
+            <span class="material-symbols-rounded detail-arrow">chevron_right</span>
+            <div class="stat-icon cash"><span class="material-symbols-rounded">account_balance</span></div>
+            <div class="stat-tile-label">현금/예금</div>
+            <div class="stat-tile-value">${formatWon(latest.categories.cash||0)}</div>
+            <div class="stat-tile-change ${cashChg.val>=0?'up':'down'}">${cashChg.val>=0?'+':''}${cashChg.pct}%</div>
+        </div>
+    `;
 
-    // 목적별 집계 (상세 자산 시트 G열 기준, 부동산/대출 제외)
+    // Alloc Grid
+    document.getElementById('allocGrid').innerHTML = allocation.map(item => `
+        <div class="alloc-row">
+            <div class="alloc-dot" style="background:${COLORS[item.category]||'#999'}"></div>
+            <div class="alloc-name">${item.category_label}</div>
+            <div class="alloc-pct">${item.percentage}%</div>
+            <div class="alloc-value">${formatWon(item.amount_krw)}</div>
+        </div>
+    `).join('');
+
+    // Maturity
+    const matItems = [];
+    (data.detail_breakdown?.cash||[]).forEach(item => {
+        const days = getMaturityDays(item.maturity);
+        if (days !== null) matItems.push({...item, days});
+    });
+    matItems.sort((a,b)=>a.days-b.days);
+    document.getElementById('maturityList').innerHTML = matItems.length===0
+        ? '<p style="color:var(--text-secondary);font-size:13px;padding:10px">만기일이 설정된 예적금이 없습니다.</p>'
+        : matItems.map(item => {
+            const days=item.days;
+            let cls='ok', txt='D-'+days;
+            if (days<0) { cls='danger'; txt='D+'+Math.abs(days)+' 만기지남'; }
+            else if (days<=30) { cls='danger'; txt='D-'+days; }
+            else if (days<=90) { cls='warn'; txt='D-'+days; }
+            return `<div class="maturity-row">
+                <div class="maturity-badge ${cls}">${txt}</div>
+                <div><div class="maturity-name">[${item.type}] ${item.name} · ${item.owner}</div><div class="maturity-sub">목적: ${item.purpose} · 만기: ${item.maturity}</div></div>
+                <div class="maturity-amt">${formatWon(item.amount)}</div>
+            </div>`;
+        }).join('');
+
+    // Purpose
     const purposeMap = {};
-    ['cash', 'stocks', 'pension', 'crypto'].forEach(cat => {
-        const list = data.detail_breakdown?.[cat] || [];
-        list.forEach(item => {
+    ['cash','stocks','pension','crypto'].forEach(cat => {
+        (data.detail_breakdown?.[cat]||[]).forEach(item => {
             const p = item.purpose || '기타';
             if (!purposeMap[p]) purposeMap[p] = 0;
             purposeMap[p] += item.amount || 0;
         });
     });
-    const purposeList = Object.entries(purposeMap).map(([p, a]) => ({ purpose: p, amount: a })).sort((a, b) => b.amount - a.amount);
+    const purposeList = Object.entries(purposeMap).map(([p,a])=>({purpose:p,amount:a})).sort((a,b)=>b.amount-a.amount);
 
-    // 만기 알림 (cash 상세 내역 중 maturity가 있는 것)
-    const maturityItems = [];
-    if (data.detail_breakdown && data.detail_breakdown.cash) {
-        data.detail_breakdown.cash.forEach(item => {
-            const days = getMaturityDays(item.maturity);
-            if (days !== null) {
-                maturityItems.push({ ...item, days });
-            }
-        });
-    }
-    maturityItems.sort((a, b) => a.days - b.days);
+    // ── Charts ──
+    const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
+    const textColor = isDark ? '#a0a0b8' : '#6b7280';
 
-    let html = `
-        <div class="stats-grid">
-            <div class="stat-card primary">
-                <div class="stat-label">순자산 (Net Assets)</div>
-                <div class="stat-value" style="color:var(--primary)">${formatWon(data.net_valuation_krw)}</div>
-                <div class="stat-change ${momChange >= 0 ? 'up' : 'down'}">
-                    ${momChange >= 0 ? '&#9650;' : '&#9660;'} ${formatWon(Math.abs(momChange))} (${momPct}%)
-                </div>
-            </div>
-            <div class="stat-card estate" onclick="showDetail('real_estate')">
-                <button class="detail-btn">상세보기</button>
-                <div class="stat-label">부동산</div>
-                <div class="stat-value" style="color:#795548">${formatWon(latest.categories.real_estate || 0)}</div>
-            </div>
-            <div class="stat-card danger" onclick="showDetail('stocks')">
-                <button class="detail-btn">상세보기</button>
-                <div class="stat-label">주식</div>
-                <div class="stat-value" style="color:var(--danger)">${formatWon(latest.categories.stocks || 0)}</div>
-                <div class="stat-change ${stockChange.val >= 0 ? 'up' : 'down'}">
-                    ${stockChange.val >= 0 ? '&#9650;' : '&#9660;'} ${stockChange.pct}%
-                </div>
-            </div>
-            <div class="stat-card info" onclick="showDetail('pension')">
-                <button class="detail-btn">상세보기</button>
-                <div class="stat-label">개인연금</div>
-                <div class="stat-value" style="color:var(--info)">${formatWon(latest.categories.pension || 0)}</div>
-                <div class="stat-change ${pensionChange.val >= 0 ? 'up' : 'down'}">
-                    ${pensionChange.val >= 0 ? '&#9650;' : '&#9660;'} ${pensionChange.pct}%
-                </div>
-            </div>
-            <div class="stat-card success" onclick="showDetail('cash')">
-                <button class="detail-btn">상세보기</button>
-                <div class="stat-label">현금/예금</div>
-                <div class="stat-value" style="color:var(--success)">${formatWon(latest.categories.cash || 0)}</div>
-                <div class="stat-change ${cashChange.val >= 0 ? 'up' : 'down'}">
-                    ${cashChange.val >= 0 ? '&#9650;' : '&#9660;'} ${cashChange.pct}%
-                </div>
-            </div>
-            <div class="stat-card crypto" onclick="showDetail('crypto')">
-                <button class="detail-btn">상세보기</button>
-                <div class="stat-label">가상화폐</div>
-                <div class="stat-value" style="color:#9c27b0">${formatWon(latest.categories.crypto || 0)}</div>
-                <div class="stat-change ${cryptoChange.val >= 0 ? 'up' : 'down'}">
-                    ${cryptoChange.val >= 0 ? '&#9650;' : '&#9660;'} ${cryptoChange.pct}%
-                </div>
-            </div>
-            <div class="stat-card warning" onclick="showDetail('debt')">
-                <button class="detail-btn">상세보기</button>
-                <div class="stat-label">부채</div>
-                <div class="stat-value" style="color:var(--warning)">${formatWon(data.total_debt_krw)}</div>
-            </div>
-        </div>
-
-        <div class="chart-section">
-            <div class="chart-title">순자산 추이</div>
-            <div class="chart-container trend">
-                <canvas id="netTrendChart"></canvas>
-            </div>
-        </div>
-
-        <div class="chart-section">
-            <div class="chart-title">개별 자산 추이 (부동산 제외)</div>
-            <div class="chart-container trend">
-                <canvas id="individualChart"></canvas>
-            </div>
-        </div>
-
-        <div class="chart-section">
-            <div class="chart-title">부동산 추이</div>
-            <div class="chart-container xsmall">
-                <canvas id="realEstateChart"></canvas>
-            </div>
-        </div>
-
-        <div class="chart-section">
-            <div class="chart-title">자산 배분</div>
-            <div class="chart-container small">
-                <canvas id="allocChart"></canvas>
-            </div>
-            <div class="alloc-grid">
-                ${allocation.map(item => `
-                    <div class="alloc-item">
-                        <div class="alloc-dot" style="background:${COLORS[item.category] || '#999'}"></div>
-                        <div class="alloc-info">
-                            <div class="alloc-name">${item.category_label}</div>
-                            <div class="alloc-pct">${item.percentage}%</div>
-                        </div>
-                        <div class="alloc-value">${formatWon(item.amount_krw)}</div>
-                    </div>
-                `).join('')}
-            </div>
-        </div>
-
-        <div class="chart-section">
-            <div class="chart-title">&#127941; 목적별 자산 현황</div>
-            <div class="chart-container small">
-                <canvas id="purposeChart"></canvas>
-            </div>
-        </div>
-
-        <div class="chart-section">
-            <div class="chart-title">&#9200; 예적금 만기 알림</div>
-            <div class="maturity-list">
-                ${maturityItems.length === 0 ? '<p style="color:var(--text-secondary);font-size:13px;padding:10px">만기일이 설정된 예적금이 없습니다.</p>' : maturityItems.map(item => {
-                    const days = item.days;
-                    let badgeClass = 'success';
-                    let badgeText = 'D-' + days;
-                    if (days < 0) { badgeClass = 'danger'; badgeText = 'D+' + Math.abs(days) + ' (만기지남)'; }
-                    else if (days <= 30) { badgeClass = 'danger'; badgeText = 'D-' + days; }
-                    else if (days <= 90) { badgeClass = 'warning'; badgeText = 'D-' + days; }
-                    return `
-                        <div class="maturity-item">
-                            <div class="maturity-badge ${badgeClass}">${badgeText}</div>
-                            <div class="maturity-info">
-                                <div class="maturity-name">[${item.type}] ${item.name} &middot; ${item.owner}</div>
-                                <div class="maturity-sub">목적: ${item.purpose} &middot; 만기: ${item.maturity}</div>
-                            </div>
-                            <div class="maturity-amount">${formatWon(item.amount)}</div>
-                        </div>
-                    `;
-                }).join('')}
-            </div>
-        </div>
-    `;
-
-    document.getElementById('contentArea').innerHTML = html;
-
-    const dRealEstate = trends.map(t => (t.categories.real_estate || 0) / 10000);
-    const dStocks = trends.map(t => (t.categories.stocks || 0) / 10000);
-    const dPension = trends.map(t => (t.categories.pension || 0) / 10000);
-    const dCash = trends.map(t => (t.categories.cash || 0) / 10000);
-    const dCrypto = trends.map(t => (t.categories.crypto || 0) / 10000);
-
-    // 순자산 추이 Line
-    const netChanges = trends.map((t, i) => {
-        if (i === 0) return '+0.00%';
-        const p = trends[i-1].net_assets_krw;
-        const c = t.net_assets_krw;
-        const pct = ((c - p) / p * 100).toFixed(2);
-        return (pct >= 0 ? '+' : '') + pct + '%';
+    // Net Assets Line
+    const netChanges = trends.map((t,i)=>{
+        if (i===0) return '+0.00%';
+        const p=trends[i-1].net_assets_krw, c=t.net_assets_krw;
+        const pct=((c-p)/p*100).toFixed(2);
+        return (pct>=0?'+':'')+pct+'%';
     });
-    const ctxNet = document.getElementById('netTrendChart').getContext('2d');
-    charts.push(new Chart(ctxNet, {
-        type: 'line',
-        data: {
-            labels: periods,
-            datasets: [{
-                label: '순자산',
-                data: trends.map(t => t.net_assets_krw / 10000),
-                borderColor: '#6650a4',
-                backgroundColor: 'rgba(102,80,164,0.1)',
-                fill: true, tension: 0.3, pointRadius: 4, borderWidth: 2
+    charts.push(new Chart(document.getElementById('netChart'), {
+        type:'line', data:{
+            labels:periods, datasets:[{
+                label:'순자산', data:trends.map(t=>t.net_assets_krw/10000),
+                borderColor:'var(--primary)', backgroundColor: isDark ? 'rgba(167,139,250,0.12)' : 'rgba(102,80,164,0.12)',
+                fill:true, tension:0.35, pointRadius:5, pointHoverRadius:7, borderWidth:3,
+                pointBackgroundColor:'var(--surface)', pointBorderColor:'var(--primary)', pointBorderWidth:2
             }]
-        },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: { callbacks: { label: ctx => '순자산: ' + formatWonChart(ctx.raw) } },
-                datalabels: {
-                    display: true, align: 'top', anchor: 'end', offset: 4,
-                    color: '#333', font: { size: 10, weight: '600' },
-                    formatter: (value, ctx) => formatWonChart(value) + '\n(' + netChanges[ctx.dataIndex] + ')',
-                    backgroundColor: 'rgba(255,255,255,0.8)', borderRadius: 4,
-                    padding: { top: 2, bottom: 2, left: 4, right: 4 }, clip: false
-                }
-            },
-            scales: {
-                y: { ticks: { callback: v => formatWonChart(v) }, grid: { color: '#f0f0f0' } },
-                x: { grid: { display: false } }
-            }
+        }, options:{
+            responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>'순자산: '+formatWonChart(c.raw)}}, datalabels:{display:true, align:'top', anchor:'end', offset:6, color:'var(--text)', font:{size:11,weight:'600'}, formatter:(v,ctx)=>formatWonChart(v)+'\n('+netChanges[ctx.dataIndex]+')', backgroundColor:isDark?'rgba(20,20,31,0.8)':'rgba(255,255,255,0.85)', borderRadius:8, padding:{top:4,bottom:4,left:6,right:6}} },
+            scales:{ x:{grid:{display:false}, ticks:{color:textColor}}, y:{ticks:{callback:v=>formatWonChart(v), color:textColor}, grid:{color:gridColor}} }
         }
     }));
 
-    // Individual Asset Trends (부동산 제외)
-    const ctxInd = document.getElementById('individualChart').getContext('2d');
-    charts.push(new Chart(ctxInd, {
-        type: 'line',
-        data: {
-            labels: periods,
-            datasets: [
-                { label: '주식', data: trends.map(t => (t.categories.stocks || 0) / 10000), borderColor: COLORS.domestic_stock, backgroundColor: 'transparent', fill: false, tension: 0.3, pointRadius: 4, borderWidth: 2 },
-                { label: '개인연금', data: trends.map(t => (t.categories.pension || 0) / 10000), borderColor: COLORS.pension, backgroundColor: 'transparent', fill: false, tension: 0.3, pointRadius: 4, borderWidth: 2 },
-                { label: '현금/예금', data: trends.map(t => (t.categories.cash || 0) / 10000), borderColor: COLORS.cash, backgroundColor: 'transparent', fill: false, tension: 0.3, pointRadius: 4, borderWidth: 2 },
-                { label: '가상화폐', data: trends.map(t => (t.categories.crypto || 0) / 10000), borderColor: COLORS.crypto, backgroundColor: 'transparent', fill: false, tension: 0.3, pointRadius: 4, borderWidth: 2 },
+    // Individual Line
+    charts.push(new Chart(document.getElementById('indivChart'), {
+        type:'line', data:{
+            labels:periods, datasets:[
+                {label:'주식', data:trends.map(t=>(t.categories.stocks||0)/10000), borderColor:palette.stocks, backgroundColor:'transparent', fill:false, tension:0.35, pointRadius:4, borderWidth:2.5},
+                {label:'개인연금', data:trends.map(t=>(t.categories.pension||0)/10000), borderColor:palette.pension, backgroundColor:'transparent', fill:false, tension:0.35, pointRadius:4, borderWidth:2.5},
+                {label:'현금/예금', data:trends.map(t=>(t.categories.cash||0)/10000), borderColor:palette.cash, backgroundColor:'transparent', fill:false, tension:0.35, pointRadius:4, borderWidth:2.5},
+                {label:'가상화폐', data:trends.map(t=>(t.categories.crypto||0)/10000), borderColor:palette.crypto, backgroundColor:'transparent', fill:false, tension:0.35, pointRadius:4, borderWidth:2.5},
             ]
-        },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            interaction: { mode: 'index', intersect: false },
-            plugins: {
-                legend: { position: 'top', labels: { usePointStyle: true, padding: 16 } },
-                tooltip: { callbacks: { label: (ctx) => ctx.dataset.label + ': ' + formatWonChart(ctx.raw) } },
-                datalabels: {
-                    display: 'auto', align: 'top', anchor: 'end', offset: 3,
-                    color: '#333', font: { size: 10, weight: '600' },
-                    formatter: (value) => formatWonChart(value),
-                    backgroundColor: 'rgba(255,255,255,0.75)', borderRadius: 4,
-                    padding: { top: 1, bottom: 1, left: 3, right: 3 }, clip: false
-                }
-            },
-            scales: {
-                x: { grid: { display: false } },
-                y: { min: computeIndividualMin(trends), ticks: { callback: v => formatWonChart(v) }, grid: { color: '#f0f0f0' } }
+        }, options:{
+            responsive:true, maintainAspectRatio:false,
+            interaction:{mode:'index',intersect:false},
+            plugins:{ legend:{position:'top',labels:{usePointStyle:true,padding:16,color:textColor}}, tooltip:{callbacks:{label:c=>c.dataset.label+': '+formatWonChart(c.raw)}}, datalabels:{display:'auto', align:'top', anchor:'end', offset:3, color:textColor, font:{size:10,weight:'600'}, formatter:v=>formatWonChart(v), backgroundColor:isDark?'rgba(20,20,31,0.7)':'rgba(255,255,255,0.75)', borderRadius:4, padding:{top:1,bottom:1,left:3,right:3}} },
+            scales:{ x:{grid:{display:false}, ticks:{color:textColor}}, y:{ticks:{callback:v=>formatWonChart(v), color:textColor}, grid:{color:gridColor}} }
+        }
+    }));
+
+    // Real Estate Line
+    charts.push(new Chart(document.getElementById('reChart'), {
+        type:'line', data:{
+            labels:periods, datasets:[{
+                label:'부동산', data:trends.map(t=>(t.categories.real_estate||0)/10000),
+                borderColor:palette.real_estate, backgroundColor:palette.real_estate+'20',
+                fill:true, tension:0.35, pointRadius:4, borderWidth:2.5
+            }]
+        }, options:{
+            responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>'부동산: '+formatWonChart(c.raw)}}, datalabels:{display:'auto', align:'top', anchor:'end', offset:3, color:textColor, font:{size:10,weight:'600'}, formatter:v=>formatWonChart(v), backgroundColor:isDark?'rgba(20,20,31,0.7)':'rgba(255,255,255,0.75)', borderRadius:4, padding:{top:1,bottom:1,left:3,right:3}} },
+            scales:{ x:{grid:{display:false}, ticks:{color:textColor}}, y:{ticks:{callback:v=>formatWonChart(v), color:textColor}, grid:{color:gridColor}} }
+        }
+    }));
+
+    // Doughnut
+    charts.push(new Chart(document.getElementById('allocChart'), {
+        type:'doughnut', data:{
+            labels:allocation.map(a=>a.category_label),
+            datasets:[{data:allocation.map(a=>a.amount_krw), backgroundColor:allocation.map(a=>COLORS[a.category]||'#999'), borderWidth:0, hoverOffset:6}]
+        }, options:{
+            responsive:true, maintainAspectRatio:false, cutout:'68%',
+            plugins:{
+                legend:{display:false},
+                tooltip:{callbacks:{label:(c)=>{const pct=allocation[c.dataIndex].percentage; return `${c.label}: ${formatWon(c.raw)} (${pct}%)`;}}},
+                datalabels:{display:true, color:'#fff', font:{size:11,weight:'700'}, formatter:(v,ctx)=>{const lbl=ctx.chart.data.labels[ctx.dataIndex]; const pct=allocation[ctx.dataIndex].percentage; return lbl+'\n'+pct+'%';}, textAlign:'center', textShadowColor:'rgba(0,0,0,0.4)', textShadowBlur:5}
             }
         }
     }));
 
-    // 부동산 추이
-    const ctxRE = document.getElementById('realEstateChart').getContext('2d');
-    charts.push(new Chart(ctxRE, {
-        type: 'line',
-        data: {
-            labels: periods,
-            datasets: [{
-                label: '부동산',
-                data: dRealEstate,
-                borderColor: COLORS.real_estate,
-                backgroundColor: COLORS.real_estate + '30',
-                fill: true, tension: 0.3, pointRadius: 4, borderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: { callbacks: { label: ctx => '부동산: ' + formatWonChart(ctx.raw) } },
-                datalabels: {
-                    display: 'auto', align: 'top', anchor: 'end', offset: 3,
-                    color: '#333', font: { size: 10, weight: '600' },
-                    formatter: (value) => formatWonChart(value),
-                    backgroundColor: 'rgba(255,255,255,0.75)', borderRadius: 4,
-                    padding: { top: 1, bottom: 1, left: 3, right: 3 }, clip: false
-                }
-            },
-            scales: {
-                y: { ticks: { callback: v => formatWonChart(v) }, grid: { color: '#f0f0f0' } },
-                x: { grid: { display: false } }
-            }
-        }
-    }));
-
-    // Allocation Doughnut
-    const ctxAlloc = document.getElementById('allocChart').getContext('2d');
-    charts.push(new Chart(ctxAlloc, {
-        type: 'doughnut',
-        data: {
-            labels: allocation.map(a => a.category_label),
-            datasets: [{
-                data: allocation.map(a => a.amount_krw),
-                backgroundColor: allocation.map(a => COLORS[a.category] || '#999'),
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            cutout: '65%',
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: (ctx) => {
-                            const pct = allocation[ctx.dataIndex].percentage;
-                            return `${ctx.label}: ${formatWon(ctx.raw)} (${pct}%)`;
-                        }
-                    }
-                },
-                datalabels: {
-                    display: true, color: '#fff', font: { size: 11, weight: '700' },
-                    formatter: (value, ctx) => {
-                        const label = ctx.chart.data.labels[ctx.dataIndex];
-                        const pct = allocation[ctx.dataIndex].percentage;
-                        return `${label}\n${pct}%`;
-                    },
-                    textAlign: 'center',
-                    textShadowColor: 'rgba(0,0,0,0.3)', textShadowBlur: 4
-                }
-            }
-        }
-    }));
-
-    // Purpose Horizontal Bar
-    const ctxPurpose = document.getElementById('purposeChart').getContext('2d');
-    charts.push(new Chart(ctxPurpose, {
-        type: 'bar',
-        data: {
-            labels: purposeList.map(p => p.purpose),
-            datasets: [{
-                label: '금액',
-                data: purposeList.map(p => p.amount / 10000),
-                backgroundColor: purposeList.map((_, i) => {
-                    const colors = ['#6650a4','#ef5350','#2196f3','#4caf50','#ff9800','#9c27b0','#795548','#00bcd4'];
-                    return colors[i % colors.length] + 'CC';
-                }),
-                borderRadius: 8
-            }]
-        },
-        options: {
-            indexAxis: 'y',
-            responsive: true, maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: { callbacks: { label: ctx => formatWonChart(ctx.raw) } },
-                datalabels: {
-                    display: true, anchor: 'end', align: 'right', offset: 4,
-                    color: '#333', font: { size: 11, weight: '600' },
-                    formatter: (value) => formatWonChart(value)
-                }
-            },
-            scales: {
-                x: { ticks: { callback: v => formatWonChart(v) }, grid: { color: '#f0f0f0' } },
-                y: { grid: { display: false } }
-            }
+    // Purpose Bar
+    charts.push(new Chart(document.getElementById('purposeChart'), {
+        type:'bar', data:{
+            labels:purposeList.map(p=>p.purpose),
+            datasets:[{label:'금액', data:purposeList.map(p=>p.amount/10000), backgroundColor:purposeList.map((_,i)=>{
+                const colors=['#6650a4','#ef4444','#3b82f6','#10b981','#f59e0b','#9333ea','#8d6e63','#06b6d4'];
+                return colors[i%colors.length]+'CC';
+            }), borderRadius:10, barThickness:22}]
+        }, options:{
+            indexAxis:'y', responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>formatWonChart(c.raw)}}, datalabels:{display:true, anchor:'end', align:'right', offset:6, color:textColor, font:{size:12,weight:'600'}, formatter:v=>formatWonChart(v)} },
+            scales:{ x:{ticks:{callback:v=>formatWonChart(v), color:textColor}, grid:{color:gridColor}}, y:{grid:{display:false}, ticks:{color:textColor, font:{weight:'600'}}} }
         }
     }));
 }
+
+// Initial load handled by PIN success
 </script>
 </body>
 </html>
