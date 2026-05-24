@@ -1004,7 +1004,7 @@ function renderAll(data) {
             }]
         }, options:{
             responsive:true, maintainAspectRatio:false,
-            plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>'순자산: '+formatWonChart(c.raw)}}, datalabels:{display:true, align:'top', anchor:'end', offset:8, color:isDark?'#f0f0f5':'#1a1a2e', font:{size:10,weight:'700'}, formatter:(v,ctx)=>netLabels[ctx.dataIndex], backgroundColor:isDark?'rgba(20,20,31,0.9)':'rgba(255,255,255,0.95)', borderColor:isDark?'rgba(255,255,255,0.1)':'rgba(0,0,0,0.08)', borderWidth:1, borderRadius:10, padding:{top:5,bottom:5,left:8,right:8}} },
+            plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>'순자산: '+formatWonChart(c.raw)}}, datalabels:{display:true, align:(ctx)=>ctx.dataIndex===ctx.chart.data.labels.length-1?'start':'top', anchor:(ctx)=>ctx.dataIndex===ctx.chart.data.labels.length-1?'start':'end', offset:8, color:isDark?'#f0f0f5':'#1a1a2e', font:{size:10,weight:'700'}, formatter:(v,ctx)=>netLabels[ctx.dataIndex], backgroundColor:isDark?'rgba(20,20,31,0.9)':'rgba(255,255,255,0.95)', borderColor:isDark?'rgba(255,255,255,0.1)':'rgba(0,0,0,0.08)', borderWidth:1, borderRadius:10, padding:{top:5,bottom:5,left:8,right:8}} },
             scales:{ x:{grid:{display:false}, ticks:{color:textColor}}, y:{suggestedMax: netMax * 1.25, ticks:{callback:v=>formatWonChart(v), color:textColor}, grid:{color:gridColor}} }
         }
     }));
@@ -1021,7 +1021,7 @@ function renderAll(data) {
         }, options:{
             responsive:true, maintainAspectRatio:false,
             interaction:{mode:'index',intersect:false},
-            plugins:{ legend:{position:'top',labels:{usePointStyle:true,padding:16,color:textColor}}, tooltip:{callbacks:{label:c=>c.dataset.label+': '+formatWonChart(c.raw)}}, datalabels:{display:'auto', align:'top', anchor:'end', offset:3, color:textColor, font:{size:10,weight:'600'}, formatter:v=>formatWonChart(v), backgroundColor:isDark?'rgba(20,20,31,0.7)':'rgba(255,255,255,0.75)', borderRadius:4, padding:{top:1,bottom:1,left:3,right:3}} },
+            plugins:{ legend:{position:'top',labels:{usePointStyle:true,padding:16,color:textColor}}, tooltip:{callbacks:{label:c=>c.dataset.label+': '+formatWonChart(c.raw)}}, datalabels:{display:'auto', align:(ctx)=>ctx.dataIndex===ctx.chart.data.labels.length-1?'start':'top', anchor:(ctx)=>ctx.dataIndex===ctx.chart.data.labels.length-1?'start':'end', offset:3, color:textColor, font:{size:10,weight:'600'}, formatter:v=>formatWonChart(v), backgroundColor:isDark?'rgba(20,20,31,0.7)':'rgba(255,255,255,0.75)', borderRadius:4, padding:{top:1,bottom:1,left:3,right:3}} },
             scales:{ x:{grid:{display:false}, ticks:{color:textColor}}, y:{ticks:{callback:v=>formatWonChart(v), color:textColor}, grid:{color:gridColor}} }
         }
     }));
@@ -1036,7 +1036,7 @@ function renderAll(data) {
             }]
         }, options:{
             responsive:true, maintainAspectRatio:false,
-            plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>'부동산: '+formatWonChart(c.raw)}}, datalabels:{display:'auto', align:'top', anchor:'end', offset:3, color:textColor, font:{size:10,weight:'600'}, formatter:v=>formatWonChart(v), backgroundColor:isDark?'rgba(20,20,31,0.7)':'rgba(255,255,255,0.75)', borderRadius:4, padding:{top:1,bottom:1,left:3,right:3}} },
+            plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>'부동산: '+formatWonChart(c.raw)}}, datalabels:{display:'auto', align:(ctx)=>ctx.dataIndex===ctx.chart.data.labels.length-1?'start':'top', anchor:(ctx)=>ctx.dataIndex===ctx.chart.data.labels.length-1?'start':'end', offset:3, color:textColor, font:{size:10,weight:'600'}, formatter:v=>formatWonChart(v), backgroundColor:isDark?'rgba(20,20,31,0.7)':'rgba(255,255,255,0.75)', borderRadius:4, padding:{top:1,bottom:1,left:3,right:3}} },
             scales:{ x:{grid:{display:false}, ticks:{color:textColor}}, y:{ticks:{callback:v=>formatWonChart(v), color:textColor}, grid:{color:gridColor}} }
         }
     }));
