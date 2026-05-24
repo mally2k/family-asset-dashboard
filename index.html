@@ -638,6 +638,28 @@ pinInputs.forEach((input, idx) => {
     });
 });
 
+// 키보드 숫자 입력 시 아무 클릭 없이도 PIN 입력 가능
+document.addEventListener('keydown', (e) => {
+    const pinScreen = document.getElementById('pinScreen');
+    if (pinScreen.classList.contains('hidden')) return;
+    if (!/^[0-9]$/.test(e.key)) return;
+    if (e.target.tagName === 'INPUT' && e.target.closest('#pinDots')) return;
+    
+    e.preventDefault();
+    const inputs = document.querySelectorAll('#pinDots input');
+    for (let input of inputs) {
+        if (!input.value) {
+            input.value = e.key;
+            input.classList.add('filled');
+            const idx = parseInt(input.dataset.index);
+            if (idx < inputs.length - 1) inputs[idx + 1].focus();
+            const entered = Array.from(inputs).map(i => i.value).join('');
+            if (entered.length === 6) setTimeout(() => checkPin(), 150);
+            break;
+        }
+    }
+});
+
 function checkPin() {
     const entered = Array.from(pinInputs).map(i => i.value).join('');
     if (entered === CORRECT_PIN) {
