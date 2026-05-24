@@ -686,6 +686,9 @@ function formatWonFull(v) {
 function formatWonChart(v) {
     return Math.round(v).toLocaleString('ko-KR') + '만원';
 }
+function formatEok(v) {
+    return (v / 10000).toFixed(1) + '억원';
+}
 function animateCount(el, target, duration = 1200) {
     const start = 0;
     const startTime = performance.now();
@@ -1006,7 +1009,7 @@ function renderAll(data) {
         }, options:{
             responsive:true, maintainAspectRatio:false,
             plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>'순자산: '+formatWonChart(c.raw)}}, datalabels:{display:true, align:(ctx)=>ctx.dataIndex===ctx.chart.data.labels.length-1?'start':'top', anchor:(ctx)=>ctx.dataIndex===ctx.chart.data.labels.length-1?'start':'end', offset:8, color:isDark?'#f0f0f5':'#1a1a2e', font:{size:10,weight:'700'}, formatter:(v,ctx)=>netLabels[ctx.dataIndex], backgroundColor:isDark?'rgba(20,20,31,0.9)':'rgba(255,255,255,0.95)', borderColor:isDark?'rgba(255,255,255,0.1)':'rgba(0,0,0,0.08)', borderWidth:1, borderRadius:10, padding:{top:5,bottom:5,left:8,right:8}} },
-            scales:{ x:{grid:{display:false}, ticks:{color:textColor}}, y:{min: Math.max(0, netMin * 0.98), max: 260000, ticks:{callback:v=>formatEok(v), color:textColor}, grid:{color:gridColor}} }
+            scales:{ x:{grid:{display:false}, ticks:{color:textColor}}, y:{suggestedMin: netMin * 0.98, suggestedMax: 260000, ticks:{callback:v=>formatEok(v), color:textColor}, grid:{color:gridColor}} }
         }
     }));
 
