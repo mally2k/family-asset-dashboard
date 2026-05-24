@@ -983,11 +983,14 @@ function renderAll(data) {
     const textColor = isDark ? '#a0a0b8' : '#6b7280';
 
     // Net Assets Line
-    const netChanges = trends.map((t,i)=>{
-        if (i===0) return '+0.00%';
+    const netLabels = trends.map((t,i)=>{
+        const amount = formatWonChart(t.net_assets_krw/10000);
+        if (i===0) return amount + '\n(+0원, 0.00%)';
         const p=trends[i-1].net_assets_krw, c=t.net_assets_krw;
-        const pct=((c-p)/p*100).toFixed(2);
-        return (pct>=0?'+':'')+pct+'%';
+        const diff=c-p;
+        const pct=((diff)/p*100).toFixed(2);
+        const sign=diff>=0?'+':'-';
+        return amount + '\n(' + sign + formatWon(Math.abs(diff)) + ', ' + sign + pct + '%)';
     });
     charts.push(new Chart(document.getElementById('netChart'), {
         type:'line', data:{
@@ -999,7 +1002,7 @@ function renderAll(data) {
             }]
         }, options:{
             responsive:true, maintainAspectRatio:false,
-            plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>'순자산: '+formatWonChart(c.raw)}}, datalabels:{display:true, align:'top', anchor:'end', offset:6, color:'var(--text)', font:{size:11,weight:'600'}, formatter:(v,ctx)=>formatWonChart(v)+'\n('+netChanges[ctx.dataIndex]+')', backgroundColor:isDark?'rgba(20,20,31,0.8)':'rgba(255,255,255,0.85)', borderRadius:8, padding:{top:4,bottom:4,left:6,right:6}} },
+            plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>'순자산: '+formatWonChart(c.raw)}}, datalabels:{display:true, align:'top', anchor:'end', offset:8, color:isDark?'#f0f0f5':'#1a1a2e', font:{size:10,weight:'700'}, formatter:(v,ctx)=>netLabels[ctx.dataIndex], backgroundColor:isDark?'rgba(20,20,31,0.9)':'rgba(255,255,255,0.95)', borderColor:isDark?'rgba(255,255,255,0.1)':'rgba(0,0,0,0.08)', borderWidth:1, borderRadius:10, padding:{top:5,bottom:5,left:8,right:8}} },
             scales:{ x:{grid:{display:false}, ticks:{color:textColor}}, y:{ticks:{callback:v=>formatWonChart(v), color:textColor}, grid:{color:gridColor}} }
         }
     }));
