@@ -986,13 +986,14 @@ function renderAll(data) {
     const netMax = Math.max(...netValues);
     const netMin = Math.min(...netValues);
     const netLabels = trends.map((t,i)=>{
-        const amount = formatWonChart(t.net_assets_krw/10000);
-        if (i===0) return amount + '\n(+0원, 0.00%)';
+        const amount = formatEok(t.net_assets_krw/10000);
+        if (i===0) return amount + '\n(+0.0억원, 0.0%)';
         const p=trends[i-1].net_assets_krw, c=t.net_assets_krw;
         const diff=c-p;
-        const pct=((diff)/p*100).toFixed(2);
+        const diffEok = (Math.abs(diff)/100000000).toFixed(1);
+        const pct=((diff)/p*100).toFixed(1);
         const sign=diff>=0?'+':'-';
-        return amount + '\n(' + sign + formatWon(Math.abs(diff)) + ', ' + sign + pct + '%)';
+        return amount + '\n(' + sign + diffEok + '억원, ' + sign + pct + '%)';
     });
     charts.push(new Chart(document.getElementById('netChart'), {
         type:'line', data:{
@@ -1005,7 +1006,7 @@ function renderAll(data) {
         }, options:{
             responsive:true, maintainAspectRatio:false,
             plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>'순자산: '+formatWonChart(c.raw)}}, datalabels:{display:true, align:(ctx)=>ctx.dataIndex===ctx.chart.data.labels.length-1?'start':'top', anchor:(ctx)=>ctx.dataIndex===ctx.chart.data.labels.length-1?'start':'end', offset:8, color:isDark?'#f0f0f5':'#1a1a2e', font:{size:10,weight:'700'}, formatter:(v,ctx)=>netLabels[ctx.dataIndex], backgroundColor:isDark?'rgba(20,20,31,0.9)':'rgba(255,255,255,0.95)', borderColor:isDark?'rgba(255,255,255,0.1)':'rgba(0,0,0,0.08)', borderWidth:1, borderRadius:10, padding:{top:5,bottom:5,left:8,right:8}} },
-            scales:{ x:{grid:{display:false}, ticks:{color:textColor}}, y:{min: Math.max(0, netMin * 0.98), suggestedMax: netMax * 1.15, ticks:{callback:v=>formatWonChart(v), color:textColor}, grid:{color:gridColor}} }
+            scales:{ x:{grid:{display:false}, ticks:{color:textColor}}, y:{min: Math.max(0, netMin * 0.98), max: 260000, ticks:{callback:v=>formatEok(v), color:textColor}, grid:{color:gridColor}} }
         }
     }));
 
