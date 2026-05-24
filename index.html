@@ -166,8 +166,7 @@
         }
         .hero-value {
             font-size: 42px; font-weight: 800; letter-spacing: -1.5px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--crypto) 100%);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            color: var(--text);
             line-height: 1.2; margin-bottom: 10px;
         }
         .hero-change {
@@ -843,10 +842,10 @@ function showDetail(category) {
     const total = items.reduce((s,i)=>s+(i.amount||0),0);
     let rows='';
     items.forEach(item=>{
-        const ret = item.return!==null&&item.return!==undefined ? (item.return*100).toFixed(2)+'%' : '-';
-        const retColor = item.return>0?'color:var(--success)':(item.return<0?'color:var(--danger)':'');
+        const ret = item.return!==null&&item.return!==undefined ? (item.return*100).toFixed(1)+'%' : '-';
+        const retColor = item.return>0?'color:var(--info)':(item.return<0?'color:var(--danger)':'');
         const extra = item.type ? ` [${item.type}]` : '';
-        rows += `<tr><td>${item.name}${extra}</td><td>${item.owner}</td><td>${formatWonFull(item.amount)}</td><td style="${retColor}">${ret}</td><td>${item.purpose}</td></tr>`;
+        rows += `<tr><td>${item.name}${extra}</td><td>${item.owner}</td><td>${formatWon(item.amount)}</td><td style="${retColor}">${ret}</td><td>${item.purpose}</td></tr>`;
     });
     document.getElementById('detailBox').innerHTML = `
         <div class="modal-header"><div class="modal-title">${catLabel} 상세 내역</div><button class="modal-x" onclick="closeDetailModal()">&times;</button></div>
@@ -883,7 +882,7 @@ function renderAll(data) {
     animateCount(heroVal, data.net_valuation_krw);
     const heroChg = document.getElementById('heroChange');
     heroChg.className = 'hero-change ' + (momChange>=0?'up':'down');
-    heroChg.innerHTML = `<span class="material-symbols-rounded" style="font-size:18px">${momChange>=0?'trending_up':'trending_down'}</span><span>${momChange>=0?'+':''}${formatWon(Math.abs(momChange))} (${momChange>=0?'+':''}${momPct}%)</span>`;
+    heroChg.innerHTML = `<span class="material-symbols-rounded" style="font-size:18px">${momChange>=0?'trending_up':'trending_down'}</span><span>전월대비: ${momChange>=0?'+':''}${formatWon(Math.abs(momChange))} (${momChange>=0?'+':''}${momPct}%)</span>`;
 
     // Stats
     const getChg = (cat) => {
@@ -1005,7 +1004,7 @@ function renderAll(data) {
         }, options:{
             responsive:true, maintainAspectRatio:false,
             plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>'순자산: '+formatWonChart(c.raw)}}, datalabels:{display:true, align:(ctx)=>ctx.dataIndex===ctx.chart.data.labels.length-1?'start':'top', anchor:(ctx)=>ctx.dataIndex===ctx.chart.data.labels.length-1?'start':'end', offset:8, color:isDark?'#f0f0f5':'#1a1a2e', font:{size:10,weight:'700'}, formatter:(v,ctx)=>netLabels[ctx.dataIndex], backgroundColor:isDark?'rgba(20,20,31,0.9)':'rgba(255,255,255,0.95)', borderColor:isDark?'rgba(255,255,255,0.1)':'rgba(0,0,0,0.08)', borderWidth:1, borderRadius:10, padding:{top:5,bottom:5,left:8,right:8}} },
-            scales:{ x:{grid:{display:false}, ticks:{color:textColor}}, y:{suggestedMax: netMax * 1.25, ticks:{callback:v=>formatWonChart(v), color:textColor}, grid:{color:gridColor}} }
+            scales:{ x:{grid:{display:false}, ticks:{color:textColor}}, y:{suggestedMax: netMax * 1.20, ticks:{callback:v=>formatWonChart(v), color:textColor}, grid:{color:gridColor}} }
         }
     }));
 
