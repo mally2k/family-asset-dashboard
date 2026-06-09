@@ -33,6 +33,13 @@ for row in detail_rows[1:]:
     name = str(row[3] or '').strip()
     amount = float(row[4]) if row[4] is not None else 0
     ret = row[5]
+    if ret in ('-', '—', '', None):
+        ret = None
+    elif isinstance(ret, str):
+        try:
+            ret = float(ret)
+        except (ValueError, TypeError):
+            ret = None
     purpose = str(row[6] or '').strip()
     maturity = str(row[7]).strip() if row[7] is not None else '-'
     

@@ -306,19 +306,6 @@
         .maturity-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
         .maturity-amt { font-size: 13px; font-weight: 700; color: var(--primary); margin-left: auto; padding-left: 8px; }
 
-        /* ── FAB ── */
-        .fab {
-            position: fixed; bottom: 24px; right: 24px; z-index: 500;
-            width: 56px; height: 56px; border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--crypto) 100%);
-            color: #fff; border: none; font-size: 24px;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; box-shadow: 0 6px 20px rgba(var(--primary-rgb), 0.4);
-            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        .fab:hover { transform: scale(1.1) rotate(10deg); }
-        .fab:active { transform: scale(0.92); }
-
         /* ── Modals ── */
         .modal-overlay {
             position: fixed; inset: 0; background: rgba(0,0,0,0.45);
@@ -484,41 +471,11 @@
     </div>
 </div>
 
-<!-- ── Load Modal ── -->
-<div class="modal-overlay" id="loadModal" onclick="if(event.target===this)closeLoadModal()">
-    <div class="modal-box">
-        <div class="modal-header">
-            <div class="modal-title">데이터 불러오기</div>
-            <button class="modal-x" onclick="closeLoadModal()">&times;</button>
-        </div>
-        <div class="modal-option" onclick="uploadExcel()">
-            <div class="modal-option-icon">&#128193;</div>
-            <div>
-                <div class="modal-option-title">엑셀 파일 업로드</div>
-                <div class="modal-option-sub">수정한 .xlsx 파일을 선택하세요</div>
-            </div>
-        </div>
-        <div class="modal-option" onclick="fetchFromGitHub()">
-            <div class="modal-option-icon">&#127760;</div>
-            <div>
-                <div class="modal-option-title">GitHub에서 가져오기</div>
-                <div class="modal-option-sub">최신 엑셀 데이터를 자동 다운로드</div>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- ── Detail Modal ── -->
 <div class="modal-overlay" id="detailModal" onclick="if(event.target===this)closeDetailModal()">
     <div class="modal-box wide" id="detailBox"></div>
 </div>
 
-<!-- ── FAB ── -->
-<button class="fab" onclick="openLoadModal()" title="데이터로드">
-    <span class="material-symbols-rounded">sync</span>
-</button>
-
-<input type="file" id="fileInput" accept=".xlsx" style="display:none" onchange="handleFileUpload(event)">
 <div class="toast" id="toast"></div>
 
 <script>
@@ -698,119 +655,6 @@ function switchTab(name) {
     document.querySelector('[data-tab="' + name + '"]').classList.add('active');
 }
 
-/* ── Modal ── */
-function openLoadModal() { document.getElementById('loadModal').classList.add('visible'); }
-function closeLoadModal() { document.getElementById('loadModal').classList.remove('visible'); }
-function closeDetailModal() { document.getElementById('detailModal').classList.remove('visible'); }
-function uploadExcel() { closeLoadModal(); document.getElementById('fileInput').click(); }
-
-async function fetchFromGitHub() {
-    closeLoadModal();
-    showToast('GitHub에서 데이터를 불러오는 중...');
-    try {
-        const res = await fetch(GITHUB_RAW_URL);
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const data = parseExcel(await res.arrayBuffer());
-        if (data) { EMBEDDED_DATA = data; localStorage.setItem('familyAssetData', JSON.stringify(data)); loadData(); showToast('최신 데이터를 불러왔습니다!'); }
-    } catch (e) { showToast('불러오기 실패: ' + e.message); }
-}
-
-function handleFileUpload(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    showToast('엑셀 파일을 분석하는 중...');
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-        try {
-            const data = parseExcel(evt.target.result);
-            if (data) { EMBEDDED_DATA = data; localStorage.setItem('familyAssetData', JSON.stringify(data)); loadData(); showToast('데이터 로드 완료!'); }
-        } catch (err) { showToast('엑셀 파싱 오류: ' + err.message); }
-    };
-    reader.readAsArrayBuffer(file);
-    e.target.value = '';
-}
-
-function parseExcel(buf) {
-    const wb = XLSX.read(buf, { type: 'array', cellFormula: false });
-    const wsDetail = wb.Sheets['상세 자산'];
-    const wsLoan = wb.Sheets['대출'];
-    if (!wsDetail) throw new Error('"상세 자산" 시트를 찾을 수 없습니다');
-
-    const detail = XLSX.utils.sheet_to_json(wsDetail, { header: 1, defval: null });
-    const loan = wsLoan ? XLSX.utils.sheet_to_json(wsLoan, { header: 1, defval: null }) : [];
-
-    const monthlyData = {};
-    const allDetails = [];
-    for (let i = 1; i < detail.length; i++) {
-        const row = detail[i];
-        if (!row[0]) continue;
-        const month = String(row[0]).trim();
-        const cat = String(row[1] || '').trim();
-        const owner = String(row[2] || '').trim();
-        const name = String(row[3] || '').trim();
-        const amount = parseFloat(row[4]) || 0;
-        const ret = row[5];
-        const purpose = String(row[6] || '').trim();
-        const maturity = row[7] ? String(row[7]).trim() : '-';
-        const period = month.replace('2026년 ', '2026-').replace('3월','03').replace('4월','04').replace('5월','05').replace('6월','06').replace('7월','07').replace('8월','08').replace('9월','09').replace('10월','10').replace('11월','11').replace('12월','12');
-        if (!monthlyData[period]) monthlyData[period] = {};
-        if (!monthlyData[period][cat]) monthlyData[period][cat] = 0;
-        monthlyData[period][cat] += amount;
-        allDetails.push({ month, period, category: cat, owner, name, amount, return: ret, purpose, maturity, type: cat });
-    }
-    Object.keys(monthlyData).forEach(p => { monthlyData[p]['부동산'] = 2200000000; });
-
-    let loanTotal = 349025014;
-    for (let i = 1; i < loan.length; i++) {
-        const row = loan[i];
-        if (row[0] === '총액' && row[2] && typeof row[2] === 'number') { loanTotal = row[2]; break; }
-    }
-
-    const periods = Object.keys(monthlyData).sort();
-    const latestPeriod = periods[periods.length - 1];
-    const latest = monthlyData[latestPeriod];
-    const cashTotal = (latest['예금']||0)+(latest['적금']||0);
-    const totalVal = cashTotal+(latest['주식']||0)+(latest['개인연금']||0)+(latest['가상화폐']||0)+(latest['부동산']||0);
-    const allocations = [
-        { cat:'real_estate', label:'부동산', amount:latest['부동산']||0 },
-        { cat:'stocks', label:'주식', amount:latest['주식']||0 },
-        { cat:'pension', label:'개인연금', amount:latest['개인연금']||0 },
-        { cat:'cash', label:'현금/예금', amount:cashTotal },
-        { cat:'crypto', label:'가상화폐', amount:latest['가상화폐']||0 },
-    ];
-    const assetAllocation = allocations.map(a => ({
-        category: a.cat, category_label: a.label, amount_krw: Math.round(a.amount),
-        percentage: totalVal > 0 ? parseFloat(((a.amount/totalVal)*100).toFixed(2)) : 0
-    })).filter(a=>a.amount_krw>0).sort((a,b)=>b.amount_krw-a.amount_krw);
-
-    const historicalTrends = periods.map(p => {
-        const d = monthlyData[p];
-        const t = (d['예금']||0)+(d['적금']||0)+(d['주식']||0)+(d['개인연금']||0)+(d['가상화폐']||0)+(d['부동산']||0);
-        return { period:p, net_assets_krw: Math.round(t-loanTotal), categories: {
-            cash: Math.round((d['예금']||0)+(d['적금']||0)), stocks: Math.round(d['주식']||0),
-            pension: Math.round(d['개인연금']||0), crypto: Math.round(d['가상화폐']||0), real_estate: Math.round(d['부동산']||0)
-        }};
-    });
-
-    const detailMap = { real_estate: [{name:'아파트',amount:2200000000,owner:'공동',purpose:'부동산',return:null,maturity:'-'}], debt: [], stocks: [], pension: [], cash: [], crypto: [] };
-    allDetails.filter(d=>d.period===latestPeriod).forEach(d => {
-        const item = { name:d.name, amount:Math.round(d.amount), owner:d.owner, purpose:d.purpose, return:d.return, maturity:d.maturity, type:d.type };
-        if (d.category==='주식') detailMap.stocks.push(item);
-        else if (d.category==='개인연금') detailMap.pension.push(item);
-        else if (d.category==='예금'||d.category==='적금') detailMap.cash.push(item);
-        else if (d.category==='가상화폐') detailMap.crypto.push(item);
-    });
-    if (wsLoan) {
-        const loanJson = XLSX.utils.sheet_to_json(wsLoan, { header:1, defval:null });
-        for (let i=1;i<loanJson.length;i++) {
-            const row=loanJson[i];
-            if (!row[0]||row[0]==='총액') continue;
-            if (row[2]&&typeof row[2]==='number') detailMap.debt.push({ name:String(row[1]||''), amount:Math.round(row[2]), owner:String(row[0]||''), purpose:'대출', return:null, maturity:'-' });
-        }
-    }
-    return { total_valuation_krw:Math.round(totalVal), net_valuation_krw:Math.round(totalVal-loanTotal), total_debt_krw:Math.round(loanTotal), currency:'KRW', asset_allocation:assetAllocation, historical_trends:historicalTrends, detail_breakdown:detailMap, metadata:{source:'유주네 자산 현황.xlsx',last_updated:latestPeriod} };
-}
-
 /* ── Render ── */
 function destroyCharts() { charts.forEach(c=>c.destroy()); charts=[]; }
 
@@ -822,8 +666,9 @@ function showDetail(category) {
     const total = items.reduce((s,i)=>s+(i.amount||0),0);
     let rows='';
     items.forEach(item=>{
-        const ret = item.return!==null&&item.return!==undefined ? (item.return*100).toFixed(1)+'%' : '-';
-        const retColor = item.return>0?'color:var(--info)':(item.return<0?'color:var(--danger)':'');
+        const hasReturn = item.return !== null && item.return !== undefined && item.return !== '-' && typeof item.return === 'number';
+        const ret = hasReturn ? (item.return * 100).toFixed(1) + '%' : '-';
+        const retColor = hasReturn && item.return > 0 ? 'color:var(--info)' : (hasReturn && item.return < 0 ? 'color:var(--danger)' : '');
         const extra = item.type ? ` [${item.type}]` : '';
         rows += `<tr><td>${item.name}${extra}</td><td>${item.owner}</td><td>${formatWon(item.amount)}</td><td style="${retColor}">${ret}</td><td>${item.purpose}</td></tr>`;
     });
