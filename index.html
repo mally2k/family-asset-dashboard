@@ -678,10 +678,12 @@ function showDetail(category) {
     const catInfo = EMBEDDED_DATA.asset_allocation.find(a=>a.category===category);
     const catLabel = catInfo ? catInfo.category_label : (category==='debt'?'부채':category);
     const total = items.reduce((s,i)=>s+(i.amount||0),0);
+    const isDebt = category === 'debt';
+    const rateHeader = isDebt ? '금리' : '수익률';
     let rows='';
     items.forEach(item=>{
         const hasReturn = item.return !== null && item.return !== undefined && item.return !== '-' && typeof item.return === 'number';
-        const ret = hasReturn ? (item.return * 100).toFixed(1) + '%' : '-';
+        const ret = hasReturn ? (item.return * 100).toFixed(2) + '%' : '-';
         const retColor = hasReturn && item.return > 0 ? 'color:var(--info)' : (hasReturn && item.return < 0 ? 'color:var(--danger)' : '');
         const extra = item.type ? ` [${item.type}]` : '';
         rows += `<tr><td>${item.name}${extra}</td><td>${item.owner}</td><td>${formatWon(item.amount)}</td><td style="${retColor}">${ret}</td><td>${item.purpose}</td></tr>`;
@@ -690,7 +692,7 @@ function showDetail(category) {
     document.getElementById('detailBox').innerHTML = `
         <div class="modal-header"><div class="modal-title">${catLabel} 상세 내역</div><button class="modal-x" onclick="closeDetailModal()">&times;</button></div>
         <div class="table-wrap">
-            <table class="detail-table"><thead><tr><th>상품명</th><th>예금주</th><th>금액</th><th>수익률</th><th>목적</th></tr></thead><tbody>${rows}</tbody></table>
+            <table class="detail-table"><thead><tr><th>상품명</th><th>예금주</th><th>금액</th><th>${rateHeader}</th><th>목적</th></tr></thead><tbody>${rows}</tbody></table>
         </div>
         <div class="detail-total">합계: ${formatWonFull(total)}</div>`;
     document.getElementById('detailModal').classList.add('visible');
@@ -722,8 +724,12 @@ function getMaturityDays(dateStr) {
     if (!dateStr || dateStr==='-') return null;
     const p = dateStr.split('.');
     if (p.length<3) return null;
-    const d = new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2]));
-    return Math.ceil((d - TODAY) / (86400000));
+    let y = parseInt(p[0], 10);
+    const m = parseInt(p[1], 10) - 1;
+    const d = parseInt(p[2], 10);
+    if (y < 100) y += 2000;
+    const dt = new Date(y, m, d);
+    return Math.ceil((dt - TODAY) / (86400000));
 }
 
 function loadData() {
@@ -810,22 +816,25 @@ function renderAll(data) {
 
     // Maturity
     const matItems = [];
-    (data.detail_breakdown?.cash||[]).forEach(item => {
-        const days = getMaturityDays(item.maturity);
-        if (days !== null) matItems.push({...item, days});
+    ['cash','debt'].forEach(cat => {
+        (data.detail_breakdown?.[cat]||[]).forEach(item => {
+            const days = getMaturityDays(item.maturity);
+            if (days !== null) matItems.push({...item, days, category: cat});
+        });
     });
     matItems.sort((a,b)=>a.days-b.days);
     document.getElementById('maturityList').innerHTML = matItems.length===0
-        ? '<p style="color:var(--text-secondary);font-size:13px;padding:10px">만기일이 설정된 예적금이 없습니다.</p>'
+        ? '<p style="color:var(--text-secondary);font-size:13px;padding:10px">만기일이 설정된 예적금 및 대출이 없습니다.</p>'
         : matItems.map(item => {
             const days=item.days;
             let cls='ok', txt='D-'+days;
             if (days<0) { cls='danger'; txt='D+'+Math.abs(days)+' 만기지남'; }
             else if (days<=30) { cls='danger'; txt='D-'+days; }
             else if (days<=90) { cls='warn'; txt='D-'+days; }
+            const typePrefix = item.type ? `[${item.type}] ` : '';
             return `<div class="maturity-row">
                 <div class="maturity-badge ${cls}">${txt}</div>
-                <div><div class="maturity-name">[${item.type}] ${item.name} · ${item.owner}</div><div class="maturity-sub">목적: ${item.purpose} · 만기: ${item.maturity}</div></div>
+                <div><div class="maturity-name">${typePrefix}${item.name} · ${item.owner}</div><div class="maturity-sub">목적: ${item.purpose} · 만기: ${item.maturity}</div></div>
                 <div class="maturity-amt">${formatWon(item.amount)}</div>
             </div>`;
         }).join('');

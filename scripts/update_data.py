@@ -4,6 +4,20 @@ import glob
 import os
 from datetime import datetime
 
+def normalize_maturity(date_val):
+    if not date_val or date_val == '-':
+        return '-'
+    if isinstance(date_val, datetime):
+        return date_val.strftime('%Y.%m.%d')
+    s = str(date_val).strip()
+    parts = s.split('.')
+    if len(parts) >= 3:
+        y, m, d = parts[0], parts[1], parts[2]
+        if len(y) == 2:
+            y = '20' + y
+        return f"{y}.{int(m):02d}.{int(d):02d}"
+    return s
+
 # Find the most recently modified xlsx file
 xlsx_files = glob.glob('유주네 자산 현황*.xlsx')
 if not xlsx_files:
@@ -141,13 +155,20 @@ if ws_loan:
         if not row[0] or row[0] == '총액':
             continue
         if row[2] and isinstance(row[2], (int, float)):
+            interest_rate = None
+            if row[3] is not None:
+                try:
+                    interest_rate = float(row[3])
+                except (ValueError, TypeError):
+                    interest_rate = None
+            maturity = normalize_maturity(row[5])
             detail_map['debt'].append({
                 'name': str(row[1] or ''),
                 'amount': round(row[2]),
                 'owner': str(row[0] or ''),
                 'purpose': '대출',
-                'return': None,
-                'maturity': '-'
+                'return': interest_rate,
+                'maturity': maturity
             })
 
 result = {

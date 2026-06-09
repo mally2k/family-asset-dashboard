@@ -98,39 +98,39 @@
         "amount": 21640000,
         "owner": "종현",
         "purpose": "대출",
-        "return": null,
-        "maturity": "-"
+        "return": 0.0329,
+        "maturity": "2027.01.19"
       },
       {
         "name": "새마을금고",
         "amount": 100000000,
         "owner": "종현",
         "purpose": "대출",
-        "return": null,
-        "maturity": "-"
+        "return": 0.0349,
+        "maturity": "2026.07.29"
       },
       {
         "name": "새마을금고",
         "amount": 50000000,
         "owner": "종현",
         "purpose": "대출",
-        "return": null,
-        "maturity": "-"
+        "return": 0.0339,
+        "maturity": "2026.10.11"
       },
       {
         "name": "우리은행",
         "amount": 65385014,
         "owner": "종현",
         "purpose": "대출",
-        "return": null,
-        "maturity": "-"
+        "return": 0.0512,
+        "maturity": "2026.07.15"
       },
       {
         "name": "새마을금고",
         "amount": 112000000,
         "owner": "유나",
         "purpose": "대출",
-        "return": null,
+        "return": 0.0339,
         "maturity": "-"
       },
       {
@@ -138,7 +138,7 @@
         "amount": 50000000,
         "owner": "유나",
         "purpose": "대출",
-        "return": null,
+        "return": 0.05435,
         "maturity": "-"
       }
     ],
@@ -413,7 +413,7 @@
         "amount": 14580000,
         "owner": "종현",
         "purpose": "주택청약",
-        "return": "-",
+        "return": null,
         "maturity": "-",
         "type": "적금"
       }
