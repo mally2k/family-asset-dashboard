@@ -587,6 +587,7 @@ document.addEventListener('keydown', (e) => {
 function checkPin() {
     const entered = Array.from(pinInputs).map(i => i.value).join('');
     if (entered === CORRECT_PIN) {
+        pinInputs.forEach(i => i.blur());
         document.getElementById('pinScreen').classList.add('hidden');
         document.getElementById('app').classList.add('visible');
         initData().then(() => loadData());
