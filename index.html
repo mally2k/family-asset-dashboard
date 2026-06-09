@@ -318,9 +318,21 @@
             max-width: 440px; width: 90%; max-height: 80vh; overflow-y: auto;
             box-shadow: var(--shadow-lg); padding: 28px;
             animation: fadeUp 0.3s ease;
+            overflow-x: hidden;
+            position: relative;
         }
         .modal-box.wide { max-width: 680px; }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal-header {
+            position: sticky;
+            top: 0;
+            background: var(--surface);
+            z-index: 10;
+            margin: -28px -28px 20px -28px;
+            padding: 28px 28px 20px 28px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid rgba(var(--primary-rgb),0.08);
+        }
+        .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         .modal-title { font-size: 20px; font-weight: 700; }
         .modal-x { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary); }
         .modal-option {
@@ -658,6 +670,8 @@ function switchTab(name) {
 /* ── Render ── */
 function destroyCharts() { charts.forEach(c=>c.destroy()); charts=[]; }
 
+let detailModalPushed = false;
+
 function showDetail(category) {
     const bd = EMBEDDED_DATA.detail_breakdown;
     const items = bd[category] || [];
@@ -672,12 +686,37 @@ function showDetail(category) {
         const extra = item.type ? ` [${item.type}]` : '';
         rows += `<tr><td>${item.name}${extra}</td><td>${item.owner}</td><td>${formatWon(item.amount)}</td><td style="${retColor}">${ret}</td><td>${item.purpose}</td></tr>`;
     });
+    const wasVisible = document.getElementById('detailModal').classList.contains('visible');
     document.getElementById('detailBox').innerHTML = `
         <div class="modal-header"><div class="modal-title">${catLabel} 상세 내역</div><button class="modal-x" onclick="closeDetailModal()">&times;</button></div>
-        <table class="detail-table"><thead><tr><th>상품명</th><th>예금주</th><th>금액</th><th>수익률</th><th>목적</th></tr></thead><tbody>${rows}</tbody></table>
+        <div class="table-wrap">
+            <table class="detail-table"><thead><tr><th>상품명</th><th>예금주</th><th>금액</th><th>수익률</th><th>목적</th></tr></thead><tbody>${rows}</tbody></table>
+        </div>
         <div class="detail-total">합계: ${formatWonFull(total)}</div>`;
     document.getElementById('detailModal').classList.add('visible');
+    if (!wasVisible) {
+        history.pushState({detailModal:true}, '', '#detail');
+        detailModalPushed = true;
+    }
 }
+
+function closeDetailModal() {
+    const modal = document.getElementById('detailModal');
+    if (!modal.classList.contains('visible')) return;
+    modal.classList.remove('visible');
+    if (detailModalPushed && location.hash === '#detail') {
+        detailModalPushed = false;
+        history.back();
+    }
+}
+
+window.addEventListener('popstate', () => {
+    const modal = document.getElementById('detailModal');
+    if (modal.classList.contains('visible')) {
+        modal.classList.remove('visible');
+        detailModalPushed = false;
+    }
+});
 
 function getMaturityDays(dateStr) {
     if (!dateStr || dateStr==='-') return null;
