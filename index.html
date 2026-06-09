@@ -598,6 +598,16 @@ let EMBEDDED_DATA = {
   "metadata": {"source": "유주네 자산 현황.xlsx", "last_updated": "2026-06"}
 };
 
+// localStorage에서 이전에 업로드한 데이터 불러오기
+const savedData = localStorage.getItem('familyAssetData');
+if (savedData) {
+    try {
+        EMBEDDED_DATA = JSON.parse(savedData);
+    } catch (e) {
+        console.error('localStorage 데이터 파싱 실패:', e);
+    }
+}
+
 const COLORS = {
     real_estate: '#8d6e63', stocks: '#ef4444', pension: '#3b82f6',
     cash: '#10b981', crypto: '#9333ea', debt: '#f59e0b',
@@ -760,7 +770,7 @@ async function fetchFromGitHub() {
         const res = await fetch(GITHUB_RAW_URL);
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const data = parseExcel(await res.arrayBuffer());
-        if (data) { EMBEDDED_DATA = data; loadData(); showToast('최신 데이터를 불러왔습니다!'); }
+        if (data) { EMBEDDED_DATA = data; localStorage.setItem('familyAssetData', JSON.stringify(data)); loadData(); showToast('최신 데이터를 불러왔습니다!'); }
     } catch (e) { showToast('불러오기 실패: ' + e.message); }
 }
 
@@ -772,7 +782,7 @@ function handleFileUpload(e) {
     reader.onload = (evt) => {
         try {
             const data = parseExcel(evt.target.result);
-            if (data) { EMBEDDED_DATA = data; loadData(); showToast('데이터 로드 완료!'); }
+            if (data) { EMBEDDED_DATA = data; localStorage.setItem('familyAssetData', JSON.stringify(data)); loadData(); showToast('데이터 로드 완료!'); }
         } catch (err) { showToast('엑셀 파싱 오류: ' + err.message); }
     };
     reader.readAsArrayBuffer(file);
