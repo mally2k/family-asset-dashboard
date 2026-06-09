@@ -168,7 +168,8 @@ if ws_loan:
                 'owner': str(row[0] or ''),
                 'purpose': '대출',
                 'return': interest_rate,
-                'maturity': maturity
+                'maturity': maturity,
+                'type': '대출'
             })
 
 result = {

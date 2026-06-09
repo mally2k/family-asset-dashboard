@@ -99,7 +99,8 @@
         "owner": "종현",
         "purpose": "대출",
         "return": 0.0329,
-        "maturity": "2027.01.19"
+        "maturity": "2027.01.19",
+        "type": "대출"
       },
       {
         "name": "새마을금고",
@@ -107,7 +108,8 @@
         "owner": "종현",
         "purpose": "대출",
         "return": 0.0349,
-        "maturity": "2026.07.29"
+        "maturity": "2026.07.29",
+        "type": "대출"
       },
       {
         "name": "새마을금고",
@@ -115,7 +117,8 @@
         "owner": "종현",
         "purpose": "대출",
         "return": 0.0339,
-        "maturity": "2026.10.11"
+        "maturity": "2026.10.11",
+        "type": "대출"
       },
       {
         "name": "우리은행",
@@ -123,7 +126,8 @@
         "owner": "종현",
         "purpose": "대출",
         "return": 0.0512,
-        "maturity": "2026.07.15"
+        "maturity": "2026.07.15",
+        "type": "대출"
       },
       {
         "name": "새마을금고",
@@ -131,7 +135,8 @@
         "owner": "유나",
         "purpose": "대출",
         "return": 0.0339,
-        "maturity": "-"
+        "maturity": "-",
+        "type": "대출"
       },
       {
         "name": "하나은행",
@@ -139,7 +144,8 @@
         "owner": "유나",
         "purpose": "대출",
         "return": 0.05435,
-        "maturity": "-"
+        "maturity": "-",
+        "type": "대출"
       }
     ],
     "stocks": [
