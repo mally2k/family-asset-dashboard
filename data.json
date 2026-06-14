@@ -1,6 +1,6 @@
 {
-  "total_valuation_krw": 2790907803,
-  "net_valuation_krw": 2441882789,
+  "total_valuation_krw": 2788625803,
+  "net_valuation_krw": 2439600789,
   "total_debt_krw": 349025014,
   "currency": "KRW",
   "asset_allocation": [
@@ -8,13 +8,13 @@
       "category": "real_estate",
       "category_label": "부동산",
       "amount_krw": 2200000000,
-      "percentage": 78.83
+      "percentage": 78.89
     },
     {
       "category": "stocks",
       "category_label": "주식",
-      "amount_krw": 241911301,
-      "percentage": 8.67
+      "amount_krw": 239629301,
+      "percentage": 8.59
     },
     {
       "category": "pension",
@@ -26,13 +26,13 @@
       "category": "cash",
       "category_label": "현금/예금",
       "amount_krw": 150833670,
-      "percentage": 5.4
+      "percentage": 5.41
     },
     {
       "category": "crypto",
       "category_label": "가상화폐",
       "amount_krw": 4323501,
-      "percentage": 0.15
+      "percentage": 0.16
     }
   ],
   "historical_trends": [
@@ -71,10 +71,21 @@
     },
     {
       "period": "2026-06",
-      "net_assets_krw": 2441882789,
+      "net_assets_krw": 2440946789,
       "categories": {
         "cash": 150833670,
-        "stocks": 241911301,
+        "stocks": 240975301,
+        "pension": 193839331,
+        "crypto": 4323501,
+        "real_estate": 2200000000
+      }
+    },
+    {
+      "period": "2026-07",
+      "net_assets_krw": 2439600789,
+      "categories": {
+        "cash": 150833670,
+        "stocks": 239629301,
         "pension": 193839331,
         "crypto": 4323501,
         "real_estate": 2200000000
@@ -135,7 +146,7 @@
         "owner": "유나",
         "purpose": "대출",
         "return": 0.0339,
-        "maturity": "-",
+        "maturity": "2026.12.26",
         "type": "대출"
       },
       {
@@ -144,7 +155,7 @@
         "owner": "유나",
         "purpose": "대출",
         "return": 0.05435,
-        "maturity": "-",
+        "maturity": "2027.03.06",
         "type": "대출"
       }
     ],
@@ -232,10 +243,19 @@
       },
       {
         "name": "SK하이닉스",
-        "amount": 52824000,
+        "amount": 23177000,
+        "owner": "종현",
+        "purpose": "주택",
+        "return": -0.11,
+        "maturity": "-",
+        "type": "주식"
+      },
+      {
+        "name": "SK하이닉스",
+        "amount": 27365000,
         "owner": "종현",
         "purpose": "차",
-        "return": 0.2892,
+        "return": 0.8284,
         "maturity": "-",
         "type": "주식"
       },
@@ -446,7 +466,7 @@
     ]
   },
   "metadata": {
-    "source": "유주네 자산 현황.xlsx",
-    "last_updated": "2026-06"
+    "source": "유주네 자산 현황_260615.xlsx",
+    "last_updated": "2026-07"
   }
 }
