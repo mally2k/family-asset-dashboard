@@ -18,14 +18,16 @@ def normalize_maturity(date_val):
         return f"{y}.{int(m):02d}.{int(d):02d}"
     return s
 
-# Find the most recently modified xlsx file
+# Find the xlsx file to use (deterministic: prefer the base file, then dated snapshots by name)
 xlsx_files = glob.glob('유주네 자산 현황*.xlsx')
 if not xlsx_files:
     print('No xlsx files found')
     exit(0)
 
-# Sort by modification time (most recent first)
-xlsx_files.sort(key=lambda f: os.path.getmtime(f), reverse=True)
+# Prefer the base file '유주네 자산 현황.xlsx'; otherwise use the latest dated snapshot by name.
+# (modification time is unreliable in CI where all files share the checkout time)
+xlsx_files = ([f for f in xlsx_files if f == '유주네 자산 현황.xlsx'] +
+              sorted((f for f in xlsx_files if f != '유주네 자산 현황.xlsx'), reverse=True))
 excel_path = xlsx_files[0]
 print(f'Processing: {excel_path}')
 
