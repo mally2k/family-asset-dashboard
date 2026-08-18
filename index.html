@@ -499,24 +499,29 @@ TODAY.setHours(0, 0, 0, 0);
 let EMBEDDED_DATA = null;
 
 async function initData() {
+    let local = null;
     const saved = localStorage.getItem('familyAssetData');
     if (saved) {
         try {
-            EMBEDDED_DATA = JSON.parse(saved);
-            return;
+            local = JSON.parse(saved);
         } catch (e) {
             console.error('localStorage 데이터 파싱 실패:', e);
         }
     }
+    // 항상 최신 data.json을 우선 확인 (localStorage는 오프라인 대체용)
     try {
-        const res = await fetch('data.json');
+        const res = await fetch('data.json?t=' + Date.now(), { cache: 'no-store' });
         if (res.ok) {
-            EMBEDDED_DATA = await res.json();
+            const fresh = await res.json();
+            const freshDate = (fresh.metadata && fresh.metadata.last_updated) || '';
+            const localDate = (local && local.metadata && local.metadata.last_updated) || '';
+            EMBEDDED_DATA = localDate > freshDate ? local : fresh;
             return;
         }
     } catch (e) {
         console.error('data.json 로드 실패:', e);
     }
+    EMBEDDED_DATA = local;
 }
 
 const COLORS = {
