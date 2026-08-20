@@ -414,7 +414,7 @@
     </header>
 
     <section class="hero" id="heroSection">
-        <div class="hero-label">2026년 6월 순자산</div>
+        <div class="hero-label" id="heroLabel">순자산</div>
         <div class="hero-value" id="heroValue">0원</div>
         <div class="hero-change" id="heroChange">
             <span class="material-symbols-rounded" style="font-size:18px">trending_up</span>
@@ -755,6 +755,8 @@ function renderAll(data) {
     const palette = isDark ? CHART_COLORS_DARK : CHART_COLORS;
 
     // Hero
+    const [yy, mm] = latest.period.split('-');
+    document.getElementById('heroLabel').textContent = `${yy}년 ${parseInt(mm)}월 순자산`;
     const heroVal = document.getElementById('heroValue');
     animateCount(heroVal, data.net_valuation_krw);
     const heroChg = document.getElementById('heroChange');
