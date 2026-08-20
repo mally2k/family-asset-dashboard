@@ -2,6 +2,7 @@ import openpyxl
 import json
 import glob
 import os
+import re
 from datetime import datetime
 
 def normalize_maturity(date_val):
@@ -62,7 +63,12 @@ for row in detail_rows[1:]:
     period = month.replace('2026년 ', '2026-')
     period = period.replace('3월', '03').replace('4월', '04').replace('5월', '05').replace('6월', '06')
     period = period.replace('7월', '07').replace('8월', '08').replace('9월', '09').replace('10월', '10').replace('11월', '11').replace('12월', '12')
-    
+
+    # Skip future-month template rows (sheet may contain pre-filled rows for next month)
+    current_period = datetime.now().strftime('%Y-%m')
+    if re.match(r'^\d{4}-\d{2}$', period) and period > current_period:
+        continue
+
     if period not in monthly_data:
         monthly_data[period] = {}
     if cat not in monthly_data[period]:

@@ -6,6 +6,9 @@ on:
     paths:
       - '유주네 자산 현황*.xlsx'
       - '*.xlsx'
+  repository_dispatch:
+    types: [sheet-update]
+  workflow_dispatch:
 
 jobs:
   update-data:
@@ -14,7 +17,17 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      
+
+      # 수동 트리거(버튼/dispatch)일 때만 구글 시트에서 최신 xlsx 다운로드
+      - name: Download latest sheet from Google Sheets
+        if: github.event_name != 'push'
+        run: |
+          curl -fL "https://docs.google.com/spreadsheets/d/1i7SCzTGkyNKDKRG7kKYiG5WE8dIhrXZuDF-3efQxxH0/export?format=xlsx" -o "유주네 자산 현황.xlsx"
+          if [ "$(head -c 2 '유주네 자산 현황.xlsx')" != "PK" ]; then
+            echo "::error::구글 시트 다운로드 실패 - 시트가 '링크가 있는 모든 사용자'로 공유되어 있는지 확인하세요"
+            exit 1
+          fi
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:

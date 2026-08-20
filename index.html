@@ -363,6 +363,24 @@
         }
         .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 
+        /* ── Admin Update ── */
+        .admin-input {
+            width: 100%; padding: 12px 14px; border-radius: 12px;
+            border: 1px solid rgba(var(--primary-rgb), 0.25);
+            background: var(--surface-hover); color: var(--text);
+            font-size: 15px; outline: none; box-sizing: border-box;
+        }
+        .admin-input:focus { border-color: var(--primary); }
+        .admin-submit {
+            width: 100%; margin-top: 14px; padding: 13px;
+            border: none; border-radius: 12px; cursor: pointer;
+            background: var(--primary); color: #fff; font-size: 15px; font-weight: 700;
+            transition: opacity 0.2s;
+        }
+        .admin-submit:disabled { opacity: 0.5; cursor: default; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spin { animation: spin 1s linear infinite; }
+
         /* ── Footer ── */
         .footer { text-align: center; padding: 40px 20px; color: var(--text-secondary); font-size: 12px; }
 
@@ -403,6 +421,9 @@
                 유주네 자산 현황
             </div>
             <div class="header-actions">
+                <button class="icon-btn" id="syncBtn" onclick="openAdminModal()" title="데이터 업데이트">
+                    <span class="material-symbols-rounded">sync</span>
+                </button>
                 <button class="icon-btn" onclick="toggleTheme()" title="테마 전환">
                     <span class="material-symbols-rounded" id="themeIcon">dark_mode</span>
                 </button>
@@ -486,6 +507,17 @@
 <!-- ── Detail Modal ── -->
 <div class="modal-overlay" id="detailModal" onclick="if(event.target===this)closeDetailModal()">
     <div class="modal-box wide" id="detailBox"></div>
+</div>
+
+<!-- ── Admin Update Modal ── -->
+<div class="modal-overlay" id="adminModal" onclick="if(event.target===this)closeAdminModal()">
+    <div class="modal-box" style="max-width:360px">
+        <div class="modal-header"><div class="modal-title">데이터 업데이트</div><button class="modal-x" onclick="closeAdminModal()">&times;</button></div>
+        <p style="font-size:13px;color:var(--text-secondary);margin:0 0 14px">구글 시트의 최신 데이터를 가져옵니다. 관리자 비밀번호를 입력하세요.</p>
+        <input type="password" id="adminPw" class="admin-input" placeholder="관리자 비밀번호" autocomplete="off">
+        <div id="adminError" style="color:var(--danger);font-size:12px;min-height:16px;margin-top:6px"></div>
+        <button class="admin-submit" id="adminSubmitBtn" onclick="submitAdminPassword()">업데이트 시작</button>
+    </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -664,6 +696,86 @@ function showToast(msg) {
 }
 function shareLink() {
     navigator.clipboard.writeText(window.location.href).then(() => showToast('링크가 복사되었습니다'));
+}
+
+/* ── Admin Update (구글 시트 → 자동 반영) ── */
+const ADMIN_WORKER_URL = ''; // Cloudflare Worker URL (배포 후 여기에 입력)
+
+function openAdminModal() {
+    document.getElementById('adminError').textContent = '';
+    document.getElementById('adminPw').value = '';
+    document.getElementById('adminModal').classList.add('visible');
+    setTimeout(() => document.getElementById('adminPw').focus(), 100);
+}
+function closeAdminModal() {
+    document.getElementById('adminModal').classList.remove('visible');
+}
+
+document.getElementById('adminPw').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') submitAdminPassword();
+});
+
+async function submitAdminPassword() {
+    const pw = document.getElementById('adminPw').value;
+    const errEl = document.getElementById('adminError');
+    const btn = document.getElementById('adminSubmitBtn');
+    if (!pw) { errEl.textContent = '비밀번호를 입력하세요'; return; }
+    if (!ADMIN_WORKER_URL) { errEl.textContent = '업데이트 기능이 아직 설정되지 않았습니다'; return; }
+    btn.disabled = true;
+    try {
+        const res = await fetch(ADMIN_WORKER_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: pw }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
+            closeAdminModal();
+            showToast('업데이트를 시작했습니다 (약 1~2분 소요)');
+            pollForUpdate();
+        } else {
+            errEl.textContent = data.error || '요청에 실패했습니다';
+        }
+    } catch (e) {
+        errEl.textContent = '네트워크 오류가 발생했습니다';
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+function dataFingerprint(d) {
+    if (!d) return '';
+    const m = d.metadata || {};
+    return `${m.last_updated}/${d.net_valuation_krw}/${d.total_valuation_krw}`;
+}
+
+function pollForUpdate() {
+    const before = dataFingerprint(EMBEDDED_DATA);
+    const syncIcon = document.querySelector('#syncBtn span');
+    if (syncIcon) syncIcon.classList.add('spin');
+    let tries = 0;
+    const timer = setInterval(async () => {
+        tries++;
+        try {
+            const res = await fetch('data.json?t=' + Date.now(), { cache: 'no-store' });
+            if (res.ok) {
+                const d = await res.json();
+                if (dataFingerprint(d) !== before) {
+                    clearInterval(timer);
+                    if (syncIcon) syncIcon.classList.remove('spin');
+                    EMBEDDED_DATA = d;
+                    renderAll(d);
+                    showToast('최신 데이터로 업데이트되었습니다');
+                    return;
+                }
+            }
+        } catch (e) { /* 다음 주기에 재시도 */ }
+        if (tries >= 18) { // 최대 3분
+            clearInterval(timer);
+            if (syncIcon) syncIcon.classList.remove('spin');
+            showToast('시간이 걸리고 있습니다. 잠시 후 새로고침 해주세요');
+        }
+    }, 10000);
 }
 
 /* ── Tabs ── */
