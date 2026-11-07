@@ -1,0 +1,81 @@
+name: Manual Asset Data Sync
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install gspread google-auth
+
+      - name: Fetch and Process Sheet Data
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+        run: |
+          python -c "
+          import os, json, re, gspread
+          from google.oauth2.service_account import Credentials
+
+          def clean_val(val):
+              if isinstance(val, str):
+                  # 원화 기호, 쉼표, 퍼센트 기호 제거 및 숫자 변환 시도
+                  cleaned = re.sub(r'[₩,%\s]', '', val)
+                  try:
+                      if '.' in cleaned:
+                          return float(cleaned)
+                      return int(cleaned)
+                  except ValueError:
+                      return val
+              return val
+
+          scopes = ['https://www.googleapis.com/auth/spreadsheets.readonly']
+          creds_dict = json.loads(os.environ['GCP_SA_KEY'])
+          creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+          client = gspread.authorize(creds)
+
+          doc = client.open_by_key(os.environ['SPREADSHEET_ID'])
+
+          def get_cleaned_records(sheet_name):
+              ws = doc.worksheet(sheet_name)
+              records = ws.get_all_records()
+              cleaned_records = []
+              for row in records:
+                  cleaned_row = {k: clean_val(v) for k, v in row.items()}
+                  cleaned_records.append(cleaned_row)
+              return cleaned_records
+
+          data = {
+              'summary': get_cleaned_records('총 자산 현황'),
+              'details': get_cleaned_records('상세 자산'),
+              'loans': get_cleaned_records('대출'),
+              'purposes': get_cleaned_records('목적별 현황')
+          }
+
+          # JSON 저장
+          os.makedirs('data', exist_ok=True)
+          with open('data/assets.json', 'w', encoding='utf-8') as f:
+              json.dump(data, f, ensure_ascii=False, indent=2)
+          "
+
+      - name: Commit & Push updated data
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/assets.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "manual: sync asset data from sheets" && git push)
