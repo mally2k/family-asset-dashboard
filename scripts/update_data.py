@@ -5,6 +5,10 @@ import os
 import re
 from datetime import datetime
 
+# Optional hard cap on the latest month to include (e.g. '2026-10').
+# Set via the MAX_PERIOD env var; when unset, the newest month in the sheet is used.
+MAX_PERIOD = os.environ.get('MAX_PERIOD')
+
 def normalize_maturity(date_val):
     if not date_val or date_val == '-':
         return '-'
@@ -67,6 +71,9 @@ for row in detail_rows[1:]:
     # Skip future-month template rows (sheet may contain pre-filled rows for next month)
     current_period = datetime.now().strftime('%Y-%m')
     if re.match(r'^\d{4}-\d{2}$', period) and period > current_period:
+        continue
+    # Skip any month later than the configured cap (e.g. MAX_PERIOD='2026-10')
+    if MAX_PERIOD and re.match(r'^\d{4}-\d{2}$', period) and period > MAX_PERIOD:
         continue
 
     if period not in monthly_data:
