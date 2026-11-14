@@ -1,6 +1,6 @@
 {
-  "total_valuation_krw": 2703619183,
-  "net_valuation_krw": 2354594169,
+  "total_valuation_krw": 2688257913,
+  "net_valuation_krw": 2339232899,
   "total_debt_krw": 349025014,
   "currency": "KRW",
   "asset_allocation": [
@@ -8,31 +8,31 @@
       "category": "real_estate",
       "category_label": "부동산",
       "amount_krw": 2200000000,
-      "percentage": 81.37
+      "percentage": 81.84
     },
     {
       "category": "stocks",
       "category_label": "주식",
-      "amount_krw": 190540733,
-      "percentage": 7.05
+      "amount_krw": 188199384,
+      "percentage": 7.0
     },
     {
       "category": "pension",
       "category_label": "개인연금",
-      "amount_krw": 166344276,
-      "percentage": 6.15
+      "amount_krw": 160258001,
+      "percentage": 5.96
     },
     {
       "category": "cash",
       "category_label": "현금/예금",
-      "amount_krw": 141709096,
-      "percentage": 5.24
+      "amount_krw": 135566096,
+      "percentage": 5.04
     },
     {
       "category": "crypto",
       "category_label": "가상화폐",
-      "amount_krw": 5025078,
-      "percentage": 0.19
+      "amount_krw": 4234432,
+      "percentage": 0.16
     }
   ],
   "historical_trends": [
@@ -123,6 +123,17 @@
         "crypto": 5025078,
         "real_estate": 2200000000
       }
+    },
+    {
+      "period": "2026-11",
+      "net_assets_krw": 2339232899,
+      "categories": {
+        "cash": 135566096,
+        "stocks": 188199384,
+        "pension": 160258001,
+        "crypto": 4234432,
+        "real_estate": 2200000000
+      }
     }
   ],
   "detail_breakdown": {
@@ -195,163 +206,163 @@
     "stocks": [
       {
         "name": "SPY",
-        "amount": 32760166,
+        "amount": 33340051,
         "owner": "유나",
         "purpose": "노후",
-        "return": 0.2414,
+        "return": 0.2162,
         "maturity": "-",
         "type": "주식"
       },
       {
         "name": "SCHD",
-        "amount": 11092863,
+        "amount": 12122037,
         "owner": "유나",
         "purpose": "노후",
-        "return": 0.104,
+        "return": 0.1536,
         "maturity": "-",
         "type": "주식"
       },
       {
         "name": "SK하이닉스",
-        "amount": 11709000,
+        "amount": 11268000,
         "owner": "유나",
         "purpose": "주택",
-        "return": -0.0189,
+        "return": -0.0558,
         "maturity": "-",
         "type": "주식"
       },
       {
         "name": "현대차",
-        "amount": 1845000,
+        "amount": 1599000,
         "owner": "유나",
         "purpose": "주택",
-        "return": -0.2367,
+        "return": -0.3406,
         "maturity": "-",
         "type": "주식"
       },
       {
         "name": "SPYM",
-        "amount": 1686480,
+        "amount": 1664779,
         "owner": "유나",
         "purpose": "자녀",
-        "return": -0.0577,
+        "return": -0.0699,
         "maturity": "-",
         "type": "주식"
       },
       {
         "name": "QQQM",
-        "amount": 2375101,
+        "amount": 2256002,
         "owner": "유나",
         "purpose": "자녀",
-        "return": -0.0502,
+        "return": null,
         "maturity": "-",
         "type": "주식"
       },
       {
         "name": "TIME 차이나AI테크액티브",
-        "amount": 4304220,
+        "amount": 3904020,
         "owner": "종현",
         "purpose": "여행",
-        "return": 0.1796,
+        "return": 0.07,
         "maturity": "-",
         "type": "주식"
       },
       {
         "name": "ACE 미국나스닥100",
-        "amount": 1137240,
+        "amount": 1118520,
         "owner": "종현",
         "purpose": "여행",
-        "return": 0.1827,
+        "return": 0.1633,
         "maturity": "-",
         "type": "주식"
       },
       {
         "name": "ACE 미국 S&P500",
-        "amount": 785695,
+        "amount": 787400,
         "owner": "종현",
         "purpose": "여행",
-        "return": 0.1112,
+        "return": 0.1136,
         "maturity": "-",
         "type": "주식"
       },
       {
         "name": "삼성전자",
-        "amount": 36081500,
+        "amount": 35236500,
         "owner": "종현",
         "purpose": "우리사주",
-        "return": 0.3302,
+        "return": 0.2991,
         "maturity": "-",
         "type": "주식"
       },
       {
         "name": "삼성전자",
-        "amount": 11102000,
+        "amount": 10842000,
         "owner": "종현",
         "purpose": "우리사주",
-        "return": 0.4333,
+        "return": 0.3997,
         "maturity": "-",
         "type": "주식"
       },
       {
         "name": "SK하이닉스",
-        "amount": 16419000,
+        "amount": 16029000,
         "owner": "종현",
         "purpose": "주택",
-        "return": -0.2606,
+        "return": -0.2781,
         "maturity": "-",
         "type": "주식"
       },
       {
         "name": "TIGER 미국우주테크",
-        "amount": 875270,
+        "amount": 941700,
         "owner": "종현",
         "purpose": "주택",
-        "return": -0.5219,
+        "return": -0.4856,
         "maturity": "-",
         "type": "주식"
       },
       {
         "name": "SK하이닉스",
-        "amount": 16419000,
+        "amount": 16029000,
         "owner": "종현",
         "purpose": "차",
-        "return": -0.2704,
+        "return": -0.2877,
         "maturity": "-",
         "type": "주식"
       },
       {
         "name": "삼성전자",
-        "amount": 8946000,
+        "amount": 8757000,
         "owner": "유주",
         "purpose": "자녀",
-        "return": 2.3524,
+        "return": 2.2816,
         "maturity": "-",
         "type": "주식"
       },
       {
         "name": "알파벳",
-        "amount": 5106068,
+        "amount": 4747996,
         "owner": "유주",
         "purpose": "자녀",
-        "return": 0.0499,
+        "return": -0.0331,
         "maturity": "-",
         "type": "주식"
       },
       {
         "name": "QQQ",
-        "amount": 13993783,
+        "amount": 13642843,
         "owner": "유주",
         "purpose": "자녀",
-        "return": 0.1274,
+        "return": 0.0887,
         "maturity": "-",
         "type": "주식"
       },
       {
         "name": "S&P 500",
-        "amount": 13902347,
+        "amount": 13913536,
         "owner": "유주",
         "purpose": "자녀",
-        "return": 0.2665,
+        "return": 0.2556,
         "maturity": "-",
         "type": "주식"
       }
@@ -359,82 +370,82 @@
     "pension": [
       {
         "name": "TIGER 미국 S&P500",
-        "amount": 30885250,
+        "amount": 30250000,
         "owner": "유나",
         "purpose": "노후",
-        "return": 0.4272,
+        "return": 0.398,
         "maturity": "-",
         "type": "개인연금"
       },
       {
         "name": "TIME K바이오액티브",
-        "amount": 704925,
+        "amount": 655525,
         "owner": "유나",
         "purpose": "노후",
-        "return": -0.3417,
+        "return": -0.3878,
         "maturity": "-",
         "type": "개인연금"
       },
       {
         "name": "TIGER 글로벌AI액티브",
-        "amount": 25686050,
+        "amount": 22129520,
         "owner": "유나",
         "purpose": "노후",
-        "return": 0.6509,
+        "return": 0.4223,
         "maturity": "-",
         "type": "개인연금"
       },
       {
         "name": "TIME 차이나AI테크액티브",
-        "amount": 6067600,
+        "amount": 5445825,
         "owner": "종현",
         "purpose": "노후",
-        "return": 0.0293,
+        "return": -0.0761,
         "maturity": "-",
         "type": "개인연금"
       },
       {
         "name": "ACE 미국나스닥100",
-        "amount": 52476300,
+        "amount": 51365880,
         "owner": "종현",
         "purpose": "노후",
-        "return": 0.2253,
+        "return": 0.1993,
         "maturity": "-",
         "type": "개인연금"
       },
       {
         "name": "ACE 미국 S&P500",
-        "amount": 45678080,
+        "amount": 45516800,
         "owner": "종현",
         "purpose": "노후",
-        "return": 0.1623,
+        "return": 0.1582,
         "maturity": "-",
         "type": "개인연금"
       },
       {
         "name": "TIGER 미국우주테크",
-        "amount": 455620,
+        "amount": 490200,
         "owner": "종현",
         "purpose": "노후",
-        "return": -0.6586,
+        "return": -0.6327,
         "maturity": "-",
         "type": "개인연금"
       },
       {
         "name": "퇴직연금 IRP",
-        "amount": 3545156,
+        "amount": 3494801,
         "owner": "종현",
         "purpose": "노후",
-        "return": 0.1802,
+        "return": 0.1635,
         "maturity": "-",
         "type": "개인연금"
       },
       {
         "name": "TIGER 미국우주테크",
-        "amount": 845295,
+        "amount": 909450,
         "owner": "종현",
         "purpose": "노후",
-        "return": -0.5657,
+        "return": -0.5328,
         "maturity": "-",
         "type": "개인연금"
       }
@@ -442,7 +453,7 @@
     "cash": [
       {
         "name": "새마을금고",
-        "amount": 10575426,
+        "amount": 4132426,
         "owner": "유나",
         "purpose": "주택",
         "return": null,
@@ -460,7 +471,7 @@
       },
       {
         "name": "새마을금고",
-        "amount": 3400000,
+        "amount": 3500000,
         "owner": "유나",
         "purpose": "저축공제",
         "return": null,
@@ -469,7 +480,7 @@
       },
       {
         "name": "신한은행",
-        "amount": 17440000,
+        "amount": 17540000,
         "owner": "유나",
         "purpose": "주택청약",
         "return": null,
@@ -487,7 +498,7 @@
       },
       {
         "name": "기업은행",
-        "amount": 15080000,
+        "amount": 15180000,
         "owner": "종현",
         "purpose": "주택청약",
         "return": null,
@@ -498,19 +509,19 @@
     "crypto": [
       {
         "name": "비트코인",
-        "amount": 3258948,
+        "amount": 2778318,
         "owner": "유주",
         "purpose": "자녀",
-        "return": -0.2038,
+        "return": -0.3212,
         "maturity": "-",
         "type": "가상화폐"
       },
       {
         "name": "이더리움",
-        "amount": 1766130,
+        "amount": 1456114,
         "owner": "유주",
         "purpose": "자녀",
-        "return": -0.3164,
+        "return": -0.4358,
         "maturity": "-",
         "type": "가상화폐"
       }
@@ -518,6 +529,6 @@
   },
   "metadata": {
     "source": "유주네 자산 현황.xlsx",
-    "last_updated": "2026-10"
+    "last_updated": "2026-11"
   }
 }
